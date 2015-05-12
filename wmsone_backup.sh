@@ -41,7 +41,7 @@ if [[ $usr == "root" ]]; then
                     fi
                     ((i++))
                 done < <(lsblk -d -o NAME)
-                read -p "Welche Partition möchten Sie verwenden (Nummer): " ddec
+                read -p "Welchen Datenträger möchten Sie verwenden (Nummer): " ddec
             fi
 
             if [ $prf -eq 1 ]; then
@@ -129,7 +129,7 @@ if [[ $usr == "root" ]]; then
                     resize2fs -M /dev/${part[$pdec]} $psizadd
 
                     echo "Verkleiner die Partitionsgröße: ${part[$pdec]}..."
-                    (echo d; echo $pdec; echo n; echo p; echo $pdec; echo $starsec ; echo +${psizadd}; echo w) | fdisk /dev/${device[$ddec]}
+                    (echo d; echo $pdec; echo n; echo p; echo $pdec; echo $starsec ; echo +${psizadd}K; echo w) | fdisk /dev/${device[$ddec]}
 
                     echo "Check Filesystem..."
                     e2fsck -f /dev/${part[$pdec]}
@@ -141,14 +141,14 @@ if [[ $usr == "root" ]]; then
 
                 echo "Sichere die Partitionen..."
                 NOW=$(date +"%m_%d_%Yat%H_%M_%S")
-                mkdir ../part_img/$NOW
+                mkdir part_img/$NOW
 
                 for (( x=0; x<${#part[@]}; x++ ));
                 do
                     if [ $x -ne 0 ]; then
                         echo "Sicher partition ${part[$x]}..."
                         echo "Dieser Vorgang kann einige Zeit in Anspruch nehmen!..."
-                        pv -tpreb /dev/${part[$x]} | dd bs=4M | gzip > ../part_img/$NOW/p${x}_wmsone.img.gz
+                        pv -tpreb /dev/${part[$x]} | dd bs=4M | gzip > part_img/$NOW/p${x}_wmsone.img.gz
                     fi
                 done
             fi
@@ -164,11 +164,11 @@ if [[ $usr == "root" ]]; then
                         j=0
                         while [ $j -eq 0  ]; do
                             if [[ $edec == "v" ]]; then
-                                vi ../part_img/$NOW/comment.txt
+                                vi part_img/$NOW/comment.txt
                                 j=1
                             elif [[ $edec == "e" ]]; then
                                 read -p "Beschreibung: " comment
-                                echo $comment > ../part_img/$NOW/comment.txt
+                                echo $comment > part_img/$NOW/comment.txt
                                 j=1
                             else
                                 read -p "Auswahl nicht möglich. Wählen Sie (e)inzeilig oder (v)i!" edec
@@ -178,6 +178,7 @@ if [[ $usr == "root" ]]; then
                         i=1
                     elif [[ $cdec == "n" ]]; then
                         read -p "Keine Beschreibung ausgewählt!"
+                        echo "Keine Beschreibung angegeben!" > part_img/$NOW/comment.txt
                         i=1
                     else
                         read -p "Auswahl nicht möglich. Wählen Sie (y)es oder (n)o!" cdec
@@ -192,7 +193,7 @@ if [[ $usr == "root" ]]; then
 
         # Beende den Script bei Falscheingabe
         else
-            echo "Nur Eingabe von (y)es odern (n)o möglich! Beende Befehl!"         
+            echo "Nur Eingabe von (y)es oder (n)o möglich! Beende Befehl!"         
         fi
     
     # Beende den Script wenn die Abhängigkeiten nicht gegeben sind
