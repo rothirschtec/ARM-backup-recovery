@@ -32,6 +32,12 @@ if [[ $usr == "root" ]]; then
         fi
 
         if [[ $shrinkdec == "n" ]] || [[ $shrinkdec == "y" ]]; then
+
+            if [ $prf -eq 1 ]; then
+            # Erstelle Ordner-Struktur    
+                mkdir -p tmp
+                mkdir -p part_img
+            fi
             
             if [ $prf -eq 1 ]; then
             # Suche der Speichermedien und bereite sie zu einem Auswahlmenü zu
