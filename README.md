@@ -6,4 +6,4 @@ Mit diesem Script, kann die System-Partition des Betriebssystems Raspian verklei
 Anschließend kann ein komplettes Backup der verschiedenen Partitionen erstellt werden.
 
 # wmsone_recovery.sh (BETA)
-Mit diesem Script wird ein Backup das mit dem wmsone_backup.sh Script erstellt wurde, wiederhergestellt werden.
+Mit diesem Script wird ein Backup, das mit dem wmsone_backup.sh Script erstellt wurde, wiederhergestellt.
