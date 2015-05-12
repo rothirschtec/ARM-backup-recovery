@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "wms-one Recovery tool"
+echo "wms-one Backup tool"
 echo "Author: René Zingerle"
 echo "Date: 12.05.2015"
 echo "Version: 0.01 [BETA]"
