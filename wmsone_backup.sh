@@ -27,7 +27,7 @@ if [[ $usr == "root" ]]; then
 
     if check_dependencies; then
         
-        read -p "Möchten Sie vor dem Backup eine Partition verkleinern? (y/n)" shrinkdec
+        read -p "Möchten Sie vor dem Backup eine Partition verkleinern? (y/n) " shrinkdec
         if [[ $shrinkdec == "n" ]]; then
             echo "Befehl akzeptiert, sichern der Partitionen"
         fi
@@ -90,28 +90,16 @@ if [[ $usr == "root" ]]; then
                 done < <(lsblk -l -o NAME /dev/${device[$ddec]})
             fi
 
-
-            if [ $prf -eq 1 ]; then
-            # Auflisten der Auswahl
-                echo "Sie haben sich für das Speichermedium ${device[$ddec]} mit folgenden Partitionen entschieden:"
-                for (( x=0; x<${#part[@]}; x++ ));
-                do
-                    if [ $x -ne 0 ]; then
-                        echo "${part[$x]} with ${psize[$x]}"
-                    fi
-                done
-            fi
-
             if [[ $shrinkdec == "y" ]]; then
                 if [ $prf -eq 1 ]; then
                 # Wähle zu verkleinernte Partition
                     for (( x=0; x<${#part[@]}; x++ ));
                     do
                         if [ $x -ne 0 ]; then
-                            echo "[$x] ${part[$x]}"
+                            echo "[$x] ${part[$x]} with ${psize[$x]}"
                         fi
                     done
-                    read -p "Welche der gewählten Partitionen soll verkleinert werden? (Nummer):" pdec
+                    read -p "Welche der gewählten Partitionen soll verkleinert werden? (Nummer): " pdec
                 fi
 
                 if [ $prf -eq 0 ]; then
@@ -178,10 +166,10 @@ if [[ $usr == "root" ]]; then
             if [ $prf -eq 0 ]; then
 
                 i=0
-                read -p "Möchten Sie das Backup beschreiben? (y/n)" cdec
+                read -p "Möchten Sie das Backup beschreiben? (y/n) " cdec
                 while [ $i -eq 0  ]; do
                     if [[ $cdec == "y" ]]; then
-                        read -p "Einzeilige Beschreibung oder mittels vi? (e/v)" edec
+                        read -p "Einzeilige Beschreibung oder mittels vi? (e/v) " edec
                         j=0
                         while [ $j -eq 0  ]; do
                             if [[ $edec == "v" ]]; then
@@ -192,17 +180,17 @@ if [[ $usr == "root" ]]; then
                                 echo $comment > part_img/$NOW/comment.txt
                                 j=1
                             else
-                                read -p "Auswahl nicht möglich. Wählen Sie (e)inzeilig oder (v)i!" edec
+                                read -p "Auswahl nicht möglich. Wählen Sie (e)inzeilig oder (v)i! " edec
                                 j=0
                             fi
                         done
                         i=1
                     elif [[ $cdec == "n" ]]; then
-                        read -p "Keine Beschreibung ausgewählt!"
+                        echo "Keine Beschreibung ausgewählt!"
                         echo "Keine Beschreibung angegeben!" > part_img/$NOW/comment.txt
                         i=1
                     else
-                        read -p "Auswahl nicht möglich. Wählen Sie (y)es oder (n)o!" cdec
+                        read -p "Auswahl nicht möglich. Wählen Sie (y)es oder (n)o! " cdec
                         i=0
                     fi
                 done
