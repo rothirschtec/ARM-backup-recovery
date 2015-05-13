@@ -21,7 +21,7 @@ if [[ $usr == "root" ]]; then
     echo "wms-one Backup tool"
     echo "Author: René Zingerle"
     echo "Date: 12.05.2015"
-    echo "Version: 0.03 [BETA]"
+    echo "Version: 0.04 [BETA]"
     echo "Infos: http://wmsblog.rothirsch-tec.at/wmsone_backup/index.html"
     echo "---------------------"
 
@@ -49,7 +49,9 @@ if [[ $usr == "root" ]]; then
                 echo    "[2] Verkleinern der Partitionen für kleinstmögliches Backup (Kleines Image)"
                 read -p "Wählen Sie (1/2) " shrinkdec
 
-                if [[ $shrinkdec == "2" ]]; then
+                if [[ $shrinkdec == "1" ]]; then
+                    echo "Befehl akzeptiert, erstelle Vollbackup!"
+                elif [[ $shrinkdec == "2" ]]; then
                     echo "Befehl akzeptiert, sichere kompletten Datenträger!"
                 fi
 
@@ -106,11 +108,6 @@ if [[ $usr == "root" ]]; then
                                         umount /dev/${part[$i]} &> /dev/null
                                     fi
                                 
-                                    # Hänge Partition ein um den Inhalt mittels df herausfinden zu können.
-                                    # Anschließend wird die Partition für den weiteren Script Verlauf ausgehängt.
-                                    mount /dev/${part[$i]} /mnt
-                                    psize[$i]=$(df /dev/${part[$i]} | awk '{ print $3 }' | tail -1)
-                                    umount /dev/${part[$i]}
                                 fi
 
                             done < <(lsblk -l -o NAME /dev/${device[$ddec]})
@@ -132,14 +129,21 @@ if [[ $usr == "root" ]]; then
                         if [ $prf -eq 1 ]; then
 
                             #((psizadd=(${psize[$pdec]}+1000000)))
-                            ((psizadd=(${psize[$pdec]}+100000)))
-                            echo $psizadd
+                            #((psizadd=(${psize[$pdec]}+100000)/1000))
+                            #((psizadd=(${psize[$pdec]})))
+                            #echo $psizadd
 
                             echo "Überprüfe das Dateisystem..."
                             e2fsck -f /dev/${part[$pdec]}
 
                             echo "Verkleinere Dateisystem ${part[$pdec]}... "
-                            resize2fs -p /dev/${part[$pdec]} ${psizadd}
+                            resize2fs -M /dev/${part[$pdec]} 
+                            rbc=$(tune2fs -l /dev/${part[$pdec]} | grep "Block count" | tail -1)
+                            bsz=$(tune2fs -l /dev/${part[$pdec]} | grep "Block size" | tail -1)
+                            rbc=${rbc##* }
+                            bsz=${bsz##* }
+                            ((psizadd=(${rbc}*${bsz})/1000))
+                            read -p "$rbc * $bsz = $psizadd" dec
 
                             echo "Finde den Startsektor der Partition"
                             starsec=$(fdisk -l |grep /dev/${part[$pdec]} | awk '{ print $2 }')
