@@ -56,14 +56,23 @@ if [[ $usr == "root" ]]; then
                 read -p "Welchen Datenträger möchten Sie verwenden (Nummer): " ddec
             fi
 
-            if [ $prf -eq 1 ]; then
             # Suche der Partitionen und deren Größen im Format Byte
-                i=0             # Zähler
-                psize[0]="Partition Sizes"
+            if [ $prf -eq 1 ]; then
+
+                # HEAD
+                i=0                         # @param i: Zähler für while Schleife
+                part[$i]="Part Array"       # @param part: Array für Partitionsnamen
+                psize[$i]="Partition Sizes" # @param psize: Array für Partitionsgrößen
+
+                # MAIN
                 while read p
                 do
-                    if [[ $p == *${device[$ddec]}* ]]; then
-                        if [ $i -ne 0 ]; then
+                # Durchläuft alle Datenträger
+
+                    if [[ $p == *${device[$ddec]}* ]] && [[ $p != *${device[$ddec]} ]]; then
+                        
+                        ((i++))
+                        #if [ $i -ne 0 ]; then
                             part[$i]=$p
                             if mountpoint -q /dev/${part[$i]}; then
                                 echo "${part[$i]} ist eingehängt. Entferne..."
@@ -75,12 +84,10 @@ if [[ $usr == "root" ]]; then
                             mount /dev/${part[$i]} /mnt
                             psize[$i]=$(df /dev/${part[$i]} | awk '{ print $3 }' | tail -1)
                             umount /dev/${part[$i]}
-                        else
-                            part[$i]="Part Array"
-                        fi
-                        ((i++))
+                        #fi
                     fi
-                done < <(lsblk -l -o NAME)
+
+                done < <(lsblk -l -o NAME /dev/${device[$ddec]})
             fi
 
 
@@ -96,7 +103,7 @@ if [[ $usr == "root" ]]; then
             fi
 
             if [[ $shrinkdec == "y" ]]; then
-                if [ $prf -eq 0 ]; then
+                if [ $prf -eq 1 ]; then
                 # Wähle zu verkleinernte Partition
                     for (( x=0; x<${#part[@]}; x++ ));
                     do
