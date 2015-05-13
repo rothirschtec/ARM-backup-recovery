@@ -243,6 +243,8 @@ if [[ $usr == "root" ]]; then
                     # Wiederherstellen der Image Dateien
                     if [ $prf -eq 1 ]; then
                         echo "Erstelle Partitionen..."
+                        echo "!! Sollten der Recovery-Prozess 100% erreicht haben, der Skript aber nicht mehr reagieren, dann muss der Datenträger entfernt werden !!"
+                        echo ""
                         i=1
                         for x in tmp/*
                         do
@@ -259,6 +261,7 @@ if [[ $usr == "root" ]]; then
 
             if [[ $state == "full" ]]; then
                 echo "Vollständiges Backup erkannt. Überschreibe Datenträger!"
+                echo "!! Sollten der Recovery-Prozess 100% erreicht haben, der Skript aber nicht mehr reagieren, dann muss der Datenträger entfernt werden !!"
                 gzip -dc part_img/${fol[$bdec]}/*.gz | pv -tpreb | dd bs=4M of=/dev/${device[$ddec]}
             fi
 
