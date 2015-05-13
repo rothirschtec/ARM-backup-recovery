@@ -65,14 +65,16 @@ if [[ $usr == "root" ]]; then
                     if [[ $p == *${device[$ddec]}* ]]; then
                         if [ $i -ne 0 ]; then
                             part[$i]=$p
-                            j=0
-                            while read size
-                            do
-                                if [ $j -ne 0 ]; then
-                                    psize[$i]=$size
-                                fi
-                                (( j++ ))
-                            done < <(lsblk -l -o SIZE -b /dev/${part[$i]})
+                            if mountpoint -q /dev/${part[$i]}; then
+                                echo "${part[$i]} ist eingehängt. Entferne..."
+                                umount /dev/${part[$i]} &> /dev/null
+                            elif mount -l | grep /dev/${part[$i]}; then
+                                echo "${part[$i]} ist eingehängt. Entferne..."
+                                umount /dev/${part[$i]} &> /dev/null
+                            fi
+                            mount /dev/${part[$i]} /mnt
+                            psize[$i]=$(df /dev/${part[$i]} | awk '{ print $3 }' | tail -1)
+                            umount /dev/${part[$i]}
                         else
                             part[$i]="Part Array"
                         fi
@@ -94,7 +96,7 @@ if [[ $usr == "root" ]]; then
             fi
 
             if [[ $shrinkdec == "y" ]]; then
-                if [ $prf -eq 1 ]; then
+                if [ $prf -eq 0 ]; then
                 # Wähle zu verkleinernte Partition
                     for (( x=0; x<${#part[@]}; x++ ));
                     do
@@ -105,7 +107,7 @@ if [[ $usr == "root" ]]; then
                     read -p "Welche der gewählten Partitionen soll verkleinert werden? (Nummer):" pdec
                 fi
 
-                if [ $prf -eq 1 ]; then
+                if [ $prf -eq 0 ]; then
                 # Entferen den freien Speicher auf der ausgewählten Partition und entferne es
                     echo "Prüfe ob das Dateisystem ${part[$pdec]} einhängt/gemountet ist."
                     for (( x=0; x<${#part[@]}; x++ ));
@@ -126,7 +128,7 @@ if [[ $usr == "root" ]]; then
 
 
                 # Verkleinern der Systempartition
-                if [ $prf -eq 1 ]; then
+                if [ $prf -eq 0 ]; then
 
                     ((psizadd=(${psize[$pdec]}+500000000)/1000))
                     echo $psizadd
@@ -149,7 +151,7 @@ if [[ $usr == "root" ]]; then
             fi
 
             # Sichern der Partitionen
-            if [ $prf -eq 1 ]; then
+            if [ $prf -eq 0 ]; then
 
                 echo "Sichere die Partitionen..."
                 NOW=$(date +"%m_%d_%Yat%H_%M_%S")
@@ -166,7 +168,7 @@ if [[ $usr == "root" ]]; then
             fi
 
             # Beschreiben des Backups
-            if [ $prf -eq 1 ]; then
+            if [ $prf -eq 0 ]; then
 
                 i=0
                 read -p "Möchten Sie das Backup beschreiben? (y/n)" cdec
