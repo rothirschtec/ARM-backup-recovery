@@ -102,7 +102,7 @@ if [[ $usr == "root" ]]; then
                             echo "[$x] ${part[$x]}"
                         fi
                     done
-                    read -p "Welche der gwählten Partitionen soll verkleinert werden? (Nummer):" pdec
+                    read -p "Welche der gewählten Partitionen soll verkleinert werden? (Nummer):" pdec
                 fi
 
                 if [ $prf -eq 1 ]; then
@@ -140,7 +140,7 @@ if [[ $usr == "root" ]]; then
                     echo "Verkleinere Dateisystem ${part[$pdec]}... auf das Minimum"
                     resize2fs -M /dev/${part[$pdec]} $psizadd
 
-                    echo "Verkleiner die Partitionsgröße: ${part[$pdec]}..."
+                    echo "Minimiere die Partitionsgröße: ${part[$pdec]}..."
                     (echo d; echo $pdec; echo n; echo p; echo $pdec; echo $starsec ; echo +${psizadd}K; echo w) | fdisk /dev/${device[$ddec]}
 
                     echo "Check Filesystem..."
