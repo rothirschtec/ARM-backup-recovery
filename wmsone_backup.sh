@@ -91,8 +91,9 @@ if [[ $usr == "root" ]]; then
             fi
 
             if [[ $shrinkdec == "y" ]]; then
+
                 if [ $prf -eq 1 ]; then
-                # Wähle zu verkleinernte Partition
+                # Wähle zu Partition
                     for (( x=0; x<${#part[@]}; x++ ));
                     do
                         if [ $x -ne 0 ]; then
@@ -101,26 +102,6 @@ if [[ $usr == "root" ]]; then
                     done
                     read -p "Welche der gewählten Partitionen soll verkleinert werden? (Nummer): " pdec
                 fi
-
-                if [ $prf -eq 0 ]; then
-                # Entferen den freien Speicher auf der ausgewählten Partition und entferne es
-                    echo "Prüfe ob das Dateisystem ${part[$pdec]} einhängt/gemountet ist."
-                    for (( x=0; x<${#part[@]}; x++ ));
-                    do
-                        if [ $x -ne 0 ]; then
-                            if mountpoint -q /dev/${part[$x]}; then
-                                echo "${part[$x]} ist eingehängt. Entferne..."
-                                umount /dev/${part[$x]}
-                            elif mount -l | grep /dev/${part[$x]}; then
-                                echo "${part[$x]} ist eingehängt. Entferne..."
-                                umount /dev/${part[$x]}
-                            else
-                                echo "${part[$x]} ist nicht eingehängt. Fahre fort..."
-                            fi
-                        fi
-                    done
-                fi
-
 
                 # Verkleinern der Systempartition
                 if [ $prf -eq 0 ]; then
