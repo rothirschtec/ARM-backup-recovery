@@ -104,9 +104,9 @@ if [[ $usr == "root" ]]; then
                 fi
 
                 # Verkleinern der Systempartition
-                if [ $prf -eq 0 ]; then
+                if [ $prf -eq 1 ]; then
 
-                    ((psizadd=(${psize[$pdec]}+500000000)/1000))
+                    ((psizadd=(${psize[$pdec]}+500000000)))
                     echo $psizadd
 
                     echo "Finde den Startsektor der Partition heraus"
@@ -127,7 +127,7 @@ if [[ $usr == "root" ]]; then
             fi
 
             # Sichern der Partitionen
-            if [ $prf -eq 0 ]; then
+            if [ $prf -eq 1 ]; then
 
                 echo "Sichere die Partitionen..."
                 NOW=$(date +"%m_%d_%Yat%H_%M_%S")
@@ -144,7 +144,7 @@ if [[ $usr == "root" ]]; then
             fi
 
             # Beschreiben des Backups
-            if [ $prf -eq 0 ]; then
+            if [ $prf -eq 1 ]; then
 
                 i=0
                 read -p "Möchten Sie das Backup beschreiben? (y/n) " cdec
