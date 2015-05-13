@@ -1,5 +1,4 @@
-#!/bin/bash
-
+#!/bin/bash 
 usr=$USER
 prf=1
 
@@ -22,7 +21,7 @@ if [[ $usr == "root" ]]; then
     echo "wms-one Backup tool"
     echo "Author: René Zingerle"
     echo "Date: 12.05.2015"
-    echo "Version: 0.02 [BETA]"
+    echo "Version: 0.03 [BETA]"
     echo "Infos: http://wmsblog.rothirsch-tec.at/wmsone_backup/index.html"
     echo "---------------------"
 
@@ -44,13 +43,17 @@ if [[ $usr == "root" ]]; then
             echo "]"
 
             if check_dependencies; then
-                
-                read -p "Möchten Sie vor dem Backup eine Partition verkleinern? (y/n) " shrinkdec
-                if [[ $shrinkdec == "n" ]]; then
-                    echo "Befehl akzeptiert, sichern der Partitionen"
+               
+                echo "Wählen Sie zwischen 2 Optionen:"
+                echo    "[1] Komplett Backup des Datenträgers (Großes Image)" 
+                echo    "[2] Verkleinern der Partitionen für kleinstmögliches Backup (Kleines Image)"
+                read -p "Wählen Sie (1/2) " shrinkdec
+
+                if [[ $shrinkdec == "2" ]]; then
+                    echo "Befehl akzeptiert, sichere kompletten Datenträger!"
                 fi
 
-                if [[ $shrinkdec == "n" ]] || [[ $shrinkdec == "y" ]]; then
+                if [[ $shrinkdec == "1" ]] || [[ $shrinkdec == "2" ]]; then
 
                     if [ $prf -eq 1 ]; then
                     # Erstelle Ordner-Struktur    
@@ -74,44 +77,45 @@ if [[ $usr == "root" ]]; then
                         read -p "Welchen Datenträger möchten Sie verwenden (Nummer): " ddec
                     fi
 
-                    # Suche der Partitionen und deren Größen im Format Byte
-                    if [ $prf -eq 1 ]; then
+                    if [[ $shrinkdec == "2" ]]; then
 
-                        # HEAD
-                        i=0                         # @param i: Zähler für while Schleife
-                        part[$i]="Part Array"       # @param part: Array für Partitionsnamen
-                        psize[$i]="Partition Sizes" # @param psize: Array für Partitionsgrößen
+                        # Suche der Partitionen und deren Größen im Format Byte
+                        if [ $prf -eq 1 ]; then
 
-                        # MAIN
-                        while read p
-                        do
-                        # Durchläuft alle Datenträger
+                            # HEAD
+                            i=0                         # @param i: Zähler für while Schleife
+                            part[$i]="Part Array"       # @param part: Array für Partitionsnamen
+                            psize[$i]="Partition Sizes" # @param psize: Array für Partitionsgrößen
 
-                            if [[ $p == *${device[$ddec]}* ]] && [[ $p != *${device[$ddec]} ]]; then
-                            # Durchläuft nur die Partitionen nicht aber das Gerät selbst
-                                ((i++))
-                                part[$i]=$p
+                            # MAIN
+                            while read p
+                            do
+                            # Durchläuft alle Datenträger
 
-                                # Entkopple Partitionen vom System wenn diese eingehängt sind
-                                if mountpoint -q /dev/${part[$i]} &> /dev/null; then
-                                    echo "${part[$i]} ist eingehängt. Entferne..."
-                                    umount /dev/${part[$i]} &> /dev/null
-                                elif mount -l | grep /dev/${part[$i]} &> /dev/null; then
-                                    echo "${part[$i]} ist eingehängt. Entferne..."
-                                    umount /dev/${part[$i]} &> /dev/null
+                                if [[ $p == *${device[$ddec]}* ]] && [[ $p != *${device[$ddec]} ]]; then
+                                # Durchläuft nur die Partitionen nicht aber das Gerät selbst
+                                    ((i++))
+                                    part[$i]=$p
+
+                                    # Entkopple Partitionen vom System wenn diese eingehängt sind
+                                    if mountpoint -q /dev/${part[$i]} &> /dev/null; then
+                                        echo "${part[$i]} ist eingehängt. Entferne..."
+                                        umount /dev/${part[$i]} &> /dev/null
+                                    elif mount -l | grep /dev/${part[$i]} &> /dev/null; then
+                                        echo "${part[$i]} ist eingehängt. Entferne..."
+                                        umount /dev/${part[$i]} &> /dev/null
+                                    fi
+                                
+                                    # Hänge Partition ein um den Inhalt mittels df herausfinden zu können.
+                                    # Anschließend wird die Partition für den weiteren Script Verlauf ausgehängt.
+                                    mount /dev/${part[$i]} /mnt
+                                    psize[$i]=$(df /dev/${part[$i]} | awk '{ print $3 }' | tail -1)
+                                    umount /dev/${part[$i]}
                                 fi
-                            
-                                # Hänge Partition ein um den Inhalt mittels df herausfinden zu können.
-                                # Anschließend wird die Partition für den weiteren Script Verlauf ausgehängt.
-                                mount /dev/${part[$i]} /mnt
-                                psize[$i]=$(df /dev/${part[$i]} | awk '{ print $3 }' | tail -1)
-                                umount /dev/${part[$i]}
-                            fi
 
-                        done < <(lsblk -l -o NAME /dev/${device[$ddec]})
-                    fi
+                            done < <(lsblk -l -o NAME /dev/${device[$ddec]})
+                        fi
 
-                    if [[ $shrinkdec == "y" ]]; then
 
                         if [ $prf -eq 1 ]; then
                         # Wähle zu Partition
@@ -127,41 +131,51 @@ if [[ $usr == "root" ]]; then
                         # Verkleinern der Systempartition
                         if [ $prf -eq 1 ]; then
 
-                            ((psizadd=(${psize[$pdec]}+500000)))
+                            #((psizadd=(${psize[$pdec]}+1000000)))
+                            ((psizadd=(${psize[$pdec]}+100000)))
                             echo $psizadd
-
-                            echo "Finde den Startsektor der Partition heraus"
-                            starsec=$(fdisk -l |grep /dev/${part[$pdec]} | awk '{ print $2 }')
 
                             echo "Überprüfe das Dateisystem..."
                             e2fsck -f /dev/${part[$pdec]}
 
-                            echo "Verkleinere Dateisystem ${part[$pdec]}... auf das Minimum"
-                            resize2fs -M /dev/${part[$pdec]} $psizadd
+                            echo "Verkleinere Dateisystem ${part[$pdec]}... "
+                            resize2fs -p /dev/${part[$pdec]} ${psizadd}
+
+                            echo "Finde den Startsektor der Partition"
+                            starsec=$(fdisk -l |grep /dev/${part[$pdec]} | awk '{ print $2 }')
 
                             echo "Minimiere die Partitionsgröße: ${part[$pdec]}..."
                             (echo d; echo $pdec; echo n; echo p; echo $pdec; echo $starsec ; echo +${psizadd}K; echo w) | fdisk /dev/${device[$ddec]}
 
-                            echo "Check Filesystem..."
+                            echo "Überprüfe das Dateisystem..."
                             e2fsck -f /dev/${part[$pdec]}
+
                         fi
                     fi
 
                     # Sichern der Partitionen
                     if [ $prf -eq 1 ]; then
 
-                        echo "Sichere die Partitionen..."
                         NOW=$(date +"%m_%d_%Yat%H_%M_%S")
                         mkdir part_img/$NOW
 
-                        for (( x=0; x<${#part[@]}; x++ ));
-                        do
-                            if [ $x -ne 0 ]; then
-                                echo "Sicher partition ${part[$x]}..."
-                                echo "Dieser Vorgang kann einige Zeit in Anspruch nehmen!..."
-                                pv -tpreb /dev/${part[$x]} | dd bs=4M | gzip > part_img/$NOW/p${x}_wmsone.img.gz
-                            fi
-                        done
+                        if [[ $shrinkdec == "2" ]]; then
+                            echo "Sichere die Partitionen..."
+                            for (( x=0; x<${#part[@]}; x++ ));
+                            do
+                                if [ $x -ne 0 ]; then
+                                    echo "Sicher partition ${part[$x]}..."
+                                    echo "Dieser Vorgang kann einige Zeit in Anspruch nehmen!..."
+                                    pv -tpreb /dev/${part[$x]} | dd bs=4M | gzip > part_img/$NOW/p${x}_wmsone.img.gz
+                                fi
+                            done
+                            echo "Partition" > part_img/$NOW/state.txt
+                        elif [[ $shrinkdec == "1" ]]; then
+                            echo "Sichere den kompletten Datenträger..."
+                            echo "Dieser Vorgang kann einige Zeit in Anspruch nehmen!..."
+                            pv -tpreb /dev/${device[$ddec]} | dd bs=4M | gzip > part_img/$NOW/complete_wmsone.img.gz
+                            echo "Complete" > part_img/$NOW/state.txt
+                        fi
                     fi
 
                     # Beschreiben des Backups
