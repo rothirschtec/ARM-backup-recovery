@@ -3,7 +3,7 @@
 echo "wms-one Recovery tool"
 echo "Author: René Zingerle"
 echo "Date: 12.05.2015"
-echo "Version: 0.03 [BETA]"
+echo "Version: 0.04 [BETA]"
 echo "Infos: http://wmsblog.rothirsch-tec.at/wmsone_backup/index.html"
 echo "---------------------"
 
@@ -12,7 +12,7 @@ prf=1
 dbg=0
 
 check_dependencies() {
-    dep=("pv" "util-linux" "gzip")
+    dep=("pv" "util-linux" "gzip" "parted")
 
     for x in "${dep[@]}"; do
         dpkg-query -W $x &> /dev/null
@@ -142,7 +142,9 @@ if [[ $usr == "root" ]]; then
                     do
                         echo -n "$x..."
                         gunzip $x
-                        size[$i]=$(ls -s ${x%.*} | awk '{ print $1 }')
+                        calc=$(ls -s ${x%.*} | awk '{ print $1 }')
+                        #calc=$(echo "scale=0; ($calc/100 * 110)" | bc)
+                        size[$i]=$calc
                         echo ${size[$i]}
                         (( i++ ))
                     done
@@ -249,6 +251,17 @@ if [[ $usr == "root" ]]; then
                         for x in tmp/*
                         do
                             pv -tpreb $x | dd bs=4M of=/dev/${part[$i]}
+                            if [ $i -gt 1 ]; then
+                                echo "Überprüfe das Dateisystem..."
+                                e2fsck -f /dev/${part[$i]}
+                                resize2fs -p /dev/${part[$i]} 
+                                echo "Überprüfe das Dateisystem..."
+                                e2fsck -f /dev/${part[$i]}
+                            fi
+                            if [ $i -eq 1 ]; then
+                                echo "Setze das Boot Flag"
+                                parted /dev/${device[$ddec]} set $i boot on
+                            fi
                             (( i++ ))
                         done
                     fi

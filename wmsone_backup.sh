@@ -128,11 +128,6 @@ if [[ $usr == "root" ]]; then
                         # Verkleinern der Systempartition
                         if [ $prf -eq 1 ]; then
 
-                            #((psizadd=(${psize[$pdec]}+1000000)))
-                            #((psizadd=(${psize[$pdec]}+100000)/1000))
-                            #((psizadd=(${psize[$pdec]})))
-                            #echo $psizadd
-
                             echo "Überprüfe das Dateisystem..."
                             e2fsck -f /dev/${part[$pdec]}
 
