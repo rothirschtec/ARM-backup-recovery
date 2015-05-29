@@ -3,7 +3,7 @@
 echo "wms-one Recovery tool"
 echo "Author: René Zingerle"
 echo "Date: 12.05.2015"
-echo "Version: 0.04 [BETA]"
+echo "Version: 0.05 [BETA]"
 echo "Infos: http://wmsblog.rothirsch-tec.at/wmsone_backup/index.html"
 echo "---------------------"
 
@@ -251,16 +251,15 @@ if [[ $usr == "root" ]]; then
                         for x in tmp/*
                         do
                             pv -tpreb $x | dd bs=4M of=/dev/${part[$i]}
-                            if [ $i -gt 1 ]; then
-                                echo "Überprüfe das Dateisystem..."
-                                e2fsck -f /dev/${part[$i]}
-                                resize2fs -p /dev/${part[$i]} 
-                                echo "Überprüfe das Dateisystem..."
-                                e2fsck -f /dev/${part[$i]}
-                            fi
+                            echo "Überprüfe das Dateisystem..."
+                            e2fsck -f /dev/${part[$i]}
+                            echo "Vergrößere Dateisystem auf maximum..."
+                            resize2fs -p /dev/${part[$i]} 
+                            echo "Überprüfe das Dateisystem..."
+                            e2fsck -f /dev/${part[$i]}
                             if [ $i -eq 1 ]; then
                                 echo "Setze das Boot Flag"
-                                parted /dev/${device[$ddec]} set $i boot on
+                                parted /dev/${device[$ddec]} set $i lba on
                             fi
                             (( i++ ))
                         done
