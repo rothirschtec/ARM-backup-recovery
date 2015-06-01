@@ -9,7 +9,7 @@ echo "---------------------"
 
 usr=$USER
 prf=1
-dbg=0
+dbg=1
 if [ $dbg -eq 0 ]; then
      exec="&> /dev/null"
 fi
@@ -173,10 +173,10 @@ if [[ $usr == "root" ]]; then
                             # Vergrößern eines Datenträgers
                             while [[ $sidc != "y"  ]] && [[ $sidc != "n" ]] 
                             do
-                                read -p "Soll die letzte Partition vergrößert werden? (y/n)" sidc
+                                read -p "Soll die letzte Partition erweitert werden? (y/n)" sidc
                                 if [[ $sidc == "y" ]]; then
-                                    size[$i]="\n"
-                                    echo "Letzte Partition wird vergrößert..."
+                                    size[$i]=""
+                                    echo "Letzte Partition wird erweitert..."
                                 elif [[ $sidc == "n" ]]; then
                                     echo "Fahre fort..."
                                 else
@@ -246,6 +246,7 @@ if [[ $usr == "root" ]]; then
                             # Löschen der bestehenden Partition
                             if [ $prf -eq 1 ]; then
                                 echo "Lösche alle Partition auf dem Datenträger ${device[$ddec]} ..."
+                                #(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
                                 for (( x=(${#part[@]} - 1);  x > 0; x-- )); do
                                     echo "Remote ${part[$x]}"
                                     if [ $dbg -eq 0 ]; then 
@@ -260,7 +261,7 @@ if [[ $usr == "root" ]]; then
                             if [ $prf -eq 1 ]; then
                                 echo "Erstelle Partitionen..."
                                 for (( x=0;  x < ${#size[@]}; x++ )); do
-                                    echo "Partition $x"
+                                    echo "Partition $x > Size:${size[$x]}"
                                     if [ $dbg -eq 0 ]; then 
                                         ( echo n; echo p; echo $(( x + 1 )); echo ; echo ${size[$x]}; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
                                     else
