@@ -26,7 +26,7 @@ if [[ $usr == "root" ]]; then
     echo "---------------------"
 
     echo ""
-    echo "Sollten Sie einen Datenträger verwenden, der an das System angehängt ist, sollten Sie diesen jetzt abschließen und dann wieder anstecken!"
+    echo "Bitte führen Sie den Datenträger jetzt/erneut in den Card Reader ein!"
     read -p "Bestätigen Sie mit dem Befehl (mount): " plugged
     exit=0
     while [ $exit -eq 0 ]; do
