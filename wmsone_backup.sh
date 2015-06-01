@@ -138,7 +138,7 @@ if [[ $usr == "root" ]]; then
                             rbc=${rbc##* }
                             bsz=${bsz##* }
                             ((psizadd=(${rbc}*${bsz})/1000))
-                            read -p "$rbc * $bsz = $psizadd" dec
+                            #read -p "$rbc * $bsz = $psizadd" dec
 
                             echo "Finde den Startsektor der Partition"
                             starsec=$(fdisk -l |grep /dev/${part[$pdec]} | awk '{ print $2 }')
