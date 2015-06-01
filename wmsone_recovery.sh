@@ -3,13 +3,13 @@
 echo "wms-one Recovery tool"
 echo "Author: René Zingerle"
 echo "Date: 12.05.2015"
-echo "Version: 0.05 [BETA]"
+echo "Version: 0.06 [BETA]"
 echo "Infos: http://wmsblog.rothirsch-tec.at/wmsone_backup/index.html"
 echo "---------------------"
 
 usr=$USER
 prf=1
-dbg=1
+dbg=0
 if [ $dbg -eq 0 ]; then
      exec="&> /dev/null"
 fi
@@ -290,6 +290,7 @@ if [[ $usr == "root" ]]; then
                             if [ $prf -eq 1 ]; then
                                 echo "Erstelle Partitionen..."
                                 echo "!! Dieser Vorgang kann einige Zeit in Anspruch nehmen...  !!"
+                                echo "!! Bitte warten Sie auch wenn der Vorgang 100% erreicht hat... !!"
                                 echo ""
                                 i=1
                                 for x in tmp/*
@@ -317,14 +318,14 @@ if [[ $usr == "root" ]]; then
                                     fi
                                     (( i++ ))
                                 done
-                                echo "Setze das Boot Flag"
-                                if [ $dbg -eq 0 ]; then 
-                                    parted /dev/${device[1]} set 1 lba on &> /dev/null
-                                else
-                                    parted /dev/${device[1]} set 1 lba on
-                                fi
                             fi
 
+                            echo "Setze das Boot Flag"
+                            if [ $dbg -eq 0 ]; then 
+                                parted /dev/${device[$ddec]} set 1 lba on &> /dev/null
+                            else
+                                parted /dev/${device[$ddec]} set 1 lba on
+                            fi
 
                             echo ""
                             echo "Image wurde wiederhergestellt."
