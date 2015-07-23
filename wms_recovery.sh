@@ -3,7 +3,7 @@
 echo "wms-one Recovery tool"
 echo "Author: René Zingerle"
 echo "Date: 12.05.2015"
-echo "Version: 0.07 [BETA]"
+echo "Version: 0.08 [BETA]"
 echo "Infos: http://wmsblog.rothirsch-tec.at/wmsone_backup/index.html"
 echo "---------------------"
 
@@ -202,7 +202,7 @@ if [[ $usr == "root" ]]; then
                                     read -p "Die Lebensdauer eine SD Karte ist von ihren Schreibzyklen abhängig. Trotzdem fortfahren? (y/n)" dec
                                     if [[ $dec == "y" ]]; then
                                         echo "Überschreibe den kompletten Datenträger ${device[$ddec]} mit /dev/null ..."
-                                        pv -tpreb /dev/zero | dd of=/dev/${device[$ddec]} bs=1M conv=noerror
+                                        pv -tpreb /dev/zero | dd of=/dev/${device[$ddec]} bs=32M conv=noerror
                                     fi
                                 fi
                             fi
@@ -256,11 +256,21 @@ if [[ $usr == "root" ]]; then
                                 echo "Lösche alle Partition auf dem Datenträger ${device[$ddec]} ..."
                                 #(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
                                 for (( x=(${#part[@]} - 1);  x > 0; x-- )); do
-                                    echo "Remote ${part[$x]}"
+                                    echo "Delete Partition: ${part[$x]}"
                                     if [ $dbg -eq 0 ]; then 
-                                        (echo d; echo $x; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
+                                        if [ $x -eq 1 ]; then
+                                            (echo d; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
+                                        else
+                                            (echo d; echo $x; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
+                                        fi
+                                        partprobe /dev/${device[$ddec]} 
                                     else
-                                        (echo d; echo $x; echo w) | fdisk /dev/${device[$ddec]}
+                                        if [ $x -eq 1 ]; then
+                                            (echo d; echo w) | fdisk /dev/${device[$ddec]}
+                                        else
+                                            (echo d; echo $x; echo w) | fdisk /dev/${device[$ddec]}
+                                        fi
+                                        partprobe /dev/${device[$ddec]}
                                     fi
                                 done
                             fi

@@ -2,4 +2,6 @@ part_img
 tmp
 os_orig
 qemu
+rsync_bak
 *.swp
+bananian_tools
