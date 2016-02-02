@@ -93,7 +93,7 @@ if [[ $usr == "root" ]]; then
                         rq=1
 
                         # Entgültige Entscheidung
-                        read -p "Soll dieses Backup verwendet werden? (y/n)" cdec
+                        read -p "Soll dieses Backup verwendet werden? (y/n): " cdec
                         rq=0 
                         while [ $rq -eq 0 ]; do
                             if [[ $cdec == "y" ]]; then
@@ -102,7 +102,7 @@ if [[ $usr == "root" ]]; then
                             elif [[ $cdec == "n" ]]; then
                                 rq=1
                             else 
-                                read -p "Auswahl nicht möglich (y/n)" cdec
+                                read -p "Auswahl nicht möglich (y/n): " cdec
                             fi
                         done
                     done
@@ -181,25 +181,25 @@ if [[ $usr == "root" ]]; then
                             # Vergrößern eines Datenträgers
                             while [[ $sidc != "y"  ]] && [[ $sidc != "n" ]] 
                             do
-                                read -p "Soll die letzte Partition erweitert werden? (y/n)" sidc
+                                read -p "Soll die letzte Partition erweitert werden? (y/n): " sidc
                                 if [[ $sidc == "y" ]]; then
                                     size[$i]=""
                                     echo "Letzte Partition wird erweitert..."
                                 elif [[ $sidc == "n" ]]; then
                                     echo "Fahre fort..."
                                 else
-                                    read -p "Auswahl nicht möglich!..." sidc
+                                    read -p "Auswahl nicht möglich!... " sidc
                                 fi  
                             done
                         fi
 
-                        read -p "Der komplette Datenträger ${device[$ddec]} wird überschrieben (y/n)" dec
+                        read -p "Der komplette Datenträger ${device[$ddec]} wird überschrieben (y/n): " dec
                         if [[ $dec == "y" ]]; then
 
                             if [ $prf -eq 1 ]; then
-                                read -p "Kompletten Datenträger mit Nullen überschreiben? (y/n)" dec
+                                read -p "Kompletten Datenträger mit Nullen überschreiben? (y/n): " dec
                                 if [[ $dec == "y" ]]; then
-                                    read -p "Die Lebensdauer eine SD Karte ist von ihren Schreibzyklen abhängig. Trotzdem fortfahren? (y/n)" dec
+                                    read -p "Die Lebensdauer eine SD Karte ist von ihren Schreibzyklen abhängig. Trotzdem fortfahren? (y/n): " dec
                                     if [[ $dec == "y" ]]; then
                                         echo "Überschreibe den kompletten Datenträger ${device[$ddec]} mit /dev/null ..."
                                         pv -tpreb /dev/zero | dd of=/dev/${device[$ddec]} bs=32M conv=noerror

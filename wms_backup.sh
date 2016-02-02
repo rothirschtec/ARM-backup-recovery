@@ -48,7 +48,7 @@ if [[ $usr == "root" ]]; then
                 echo "Wählen Sie zwischen 2 Optionen:"
                 echo    "[1] Komplett Backup des Datenträgers (Großes Image)" 
                 echo    "[2] Verkleinern der Partitionen für kleinstmögliches Backup (Kleines Image)"
-                read -p "Wählen Sie (1/2) " shrinkdec
+                read -p "Wählen Sie (1/2): " shrinkdec
 
                 if [[ $shrinkdec == "1" ]]; then
                     echo "Befehl akzeptiert, erstelle Vollbackup!"
@@ -157,7 +157,7 @@ if [[ $usr == "root" ]]; then
                     # Sichern der Partitionen
                     if [ $prf -eq 1 ]; then
 
-                        read -p "Möchten Sie das Image in einen Unterordner legen? (y/n)" foldec
+                        read -p "Möchten Sie das Image in einen Unterordner legen? (y/n): " foldec
                         i=0
                         while [ $i -eq 0  ]; do
                             if [[ $foldec == "y" ]]; then
@@ -197,10 +197,10 @@ if [[ $usr == "root" ]]; then
                     if [ $prf -eq 1 ]; then
 
                         i=0
-                        read -p "Möchten Sie das Backup beschreiben? (y/n) " cdec
+                        read -p "Möchten Sie das Backup beschreiben? (y/n): " cdec
                         while [ $i -eq 0  ]; do
                             if [[ $cdec == "y" ]]; then
-                                read -p "Einzeilige Beschreibung oder mittels vi? (e/v) " edec
+                                read -p "Einzeilige Beschreibung oder mittels vi? (e/v): " edec
                                 j=0
                                 while [ $j -eq 0  ]; do
                                     if [[ $edec == "v" ]]; then
@@ -211,7 +211,7 @@ if [[ $usr == "root" ]]; then
                                         echo $comment > ${imgfol}/$NOW/comment.txt
                                         j=1
                                     else
-                                        read -p "Auswahl nicht möglich. Wählen Sie (e)inzeilig oder (v)i! " edec
+                                        read -p "Auswahl nicht möglich. Wählen Sie (e)inzeilig oder (v)i!: " edec
                                         j=0
                                     fi
                                 done
@@ -221,7 +221,7 @@ if [[ $usr == "root" ]]; then
                                 echo "Keine Beschreibung angegeben!" > ${imgfol}/$NOW/comment.txt
                                 i=1
                             else
-                                read -p "Auswahl nicht möglich. Wählen Sie (y)es oder (n)o! " cdec
+                                read -p "Auswahl nicht möglich. Wählen Sie (y)es oder (n)o!: " cdec
                                 i=0
                             fi
                         done
