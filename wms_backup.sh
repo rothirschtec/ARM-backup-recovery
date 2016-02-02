@@ -4,7 +4,7 @@ prf=1
 imgfol="part_img"
 
 check_dependencies() {
-    dep=("pv" "util-linux" "gzip")
+    dep=("lib32z1" "lib32ncurses5")
 
     for x in "${dep[@]}"; do
         dpkg-query -W $x &> /dev/null
@@ -78,6 +78,7 @@ if [[ $usr == "root" ]]; then
                             ((i++))
                         done < <(lsblk -d -o NAME)
                         read -p "Welchen Datenträger möchten Sie verwenden (Nummer): " ddec
+                        partprobe /dev/${device[$ddec]} 
                     fi
 
                     if [[ $shrinkdec == "2" ]]; then
@@ -163,10 +164,10 @@ if [[ $usr == "root" ]]; then
                                 i=1      
                                 ls -R ${imgfol}/ | grep ":$" | sed -e 's/:$//' -e 's/[^-][^\/]*\// /g' -e 's/^/ /'
                                 read -p "Wie soll der Ordner heißen: " bak_fol
-                                NOW=${bak_fol}/$(date +"%m_%d_%Yat%H_%M_%S")
+                                NOW=${bak_fol}/$(date +"%Y_%m_%dat%H_%M_%S")
                             elif [[ $foldec == "n" ]]; then
                                 i=1      
-                                NOW=$(date +"%m_%d_%Yat%H_%M_%S")
+                                NOW=$(date +"%Y_%m_%dat%H_%M_%S")
                             else
                                 read -p "Auswahl nicht möglich (y/n)" foldec 
                             fi
