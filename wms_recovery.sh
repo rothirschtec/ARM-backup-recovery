@@ -255,6 +255,12 @@ if [[ $usr == "root" ]]; then
                             if [ $prf -eq 1 ]; then
                                 echo "Lösche alle Partition auf dem Datenträger ${device[$ddec]} ..."
                                 #(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
+
+                                echo ""
+                                echo "------------"
+                                echo "Erzeuge partitonstabelle"
+                                parted /dev/${device[$ddec]} mklabel msdos
+
                                 for (( x=(${#part[@]} - 1);  x > 0; x-- )); do
                                     echo "Delete Partition: ${part[$x]}"
                                     if [ $dbg -eq 0 ]; then 
