@@ -4,17 +4,19 @@ prf=1
 imgfol="part_img"
 
 check_dependencies() {
-    dep=("lib32z1" "lib32ncurses5")
+    dep=("ntp" "ntpdate")
 
     for x in "${dep[@]}"; do
         dpkg-query -W $x &> /dev/null
         if [ $? -eq 1 ]; then
             echo "$x: ist nicht installiert"
+            apt-get -y install $x
             ni=1
         fi
-    done        
+    done
     return $ni
 }
+check_dependencies
 
 # Prüfe ober der ausführende Benutzer root ist.
 if [[ $usr == "root" ]]; then
