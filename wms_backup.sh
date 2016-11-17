@@ -4,7 +4,7 @@ prf=1
 imgfol="part_img"
 
 check_dependencies() {
-    dep=("ntp" "ntpdate")
+    dep=("ntp" "ntpdate" "pv")
 
     for x in "${dep[@]}"; do
         dpkg-query -W $x &> /dev/null
