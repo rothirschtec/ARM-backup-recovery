@@ -24,7 +24,7 @@ if [[ $usr == "root" ]]; then
     echo "wms-one Backup tool"
     echo "Author: René Zingerle"
     echo "Date: 12.05.2015"
-    echo "Version: 0.05 [BETA]"
+    echo "Version: 0.08 [BETA]"
     echo "Infos: http://wmsblog.rothirsch-tec.at/wmsone_backup/index.html"
     echo "---------------------"
 
