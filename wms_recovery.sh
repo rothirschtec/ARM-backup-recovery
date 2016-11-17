@@ -256,11 +256,6 @@ if [[ $usr == "root" ]]; then
                                 echo "Lösche alle Partition auf dem Datenträger ${device[$ddec]} ..."
                                 #(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
 
-                                echo ""
-                                echo "------------"
-                                echo "Erzeuge partitonstabelle"
-                                parted /dev/${device[$ddec]} mklabel msdos
-
                                 for (( x=(${#part[@]} - 1);  x > 0; x-- )); do
                                     echo "Delete Partition: ${part[$x]}"
                                     if [ $dbg -eq 0 ]; then 
@@ -279,6 +274,11 @@ if [[ $usr == "root" ]]; then
                                         partprobe /dev/${device[$ddec]}
                                     fi
                                 done
+
+                                echo ""
+                                echo "------------"
+                                echo "Erzeuge partitonstabelle"
+                                parted -s /dev/${device[$ddec]} mklabel msdos
                             fi
 
                             # Erstellen der Partitionen 
