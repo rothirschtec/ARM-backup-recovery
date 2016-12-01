@@ -2,6 +2,7 @@
 usr=$USER
 prf=1
 imgfol="part_img"
+dbg=0
 
 check_dependencies() {
     dep=("ntp" "ntpdate" "pv")
@@ -192,6 +193,29 @@ if [[ $usr == "root" ]]; then
                             echo "Dieser Vorgang kann einige Zeit in Anspruch nehmen!..."
                             pv -tpreb /dev/${device[$ddec]} | dd bs=4M | gzip > ${imgfol}/$NOW/complete_wmsone.img.gz && sync
                             echo "Complete" > ${imgfol}/$NOW/state.txt
+                        fi
+                    fi
+
+                    # Vegrößern des ROOTfs
+                    if [ $prf -eq 1 ]; then
+                        echo "Vergrößern des Dateisystems auf Maximum"
+                        echo "Überprüfe das Dateisystem..."
+                        if [ $dbg -eq 0 ]; then 
+                            e2fsck -f /dev/${part[$pdec]} &> /dev/null
+                        else
+                            e2fsck -f /dev/${part[$pdec]}
+                        fi
+                        echo "Vergrößere Dateisystem auf maximum..."
+                        if [ $dbg -eq 0 ]; then 
+                            resize2fs -p /dev/${part[$pdec]} &> /dev/null
+                        else
+                            resize2fs -p /dev/${part[$pdec]}
+                        fi
+                        echo "Überprüfe das Dateisystem..."
+                        if [ $dbg -eq 0 ]; then 
+                            e2fsck -f /dev/${part[$pdec]} &> /dev/null
+                        else
+                            e2fsck -f /dev/${part[$pdec]}
                         fi
                     fi
 
