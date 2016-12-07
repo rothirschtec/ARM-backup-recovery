@@ -1,4 +1,12 @@
 #!/bin/bash 
+
+echo "#wms Backup tool"
+echo "Author: René Zingerle"
+echo "Date: 07.12.2016"
+echo "Version: 0.09 [BETA]"
+echo "Info: http://http://wmsblog.rothirsch.tech/wms_backup/"
+echo "---------------------"
+
 usr=$USER
 prf=1
 dbg=0
@@ -22,15 +30,8 @@ check_dependencies() {
 }
 check_dependencies
 
-# Prüfe ober der ausführende Benutzer root ist.
+# Check user for root permissions
 if [[ $usr == "root" ]]; then
-
-    echo "#wms Backup tool"
-    echo "Author: René Zingerle"
-    echo "Date: 07.12.2016"
-    echo "Version: 0.09 [BETA]"
-    echo "Info: http://http://wmsblog.rothirsch.tech/wms_backup/"
-    echo "---------------------"
 
     echo ""
     echo "Please insert/reinsert you microSD Card now!"
@@ -41,7 +42,7 @@ if [[ $usr == "root" ]]; then
             
             # Warte 5 Sekunde
             wait=5
-            echo -n "Wait for 5 seconds. Check if everything is fine ["
+            echo -n "Wait for 5 seconds. Please check if everything is fine ["
             for ((x=0; x<$wait; x++))
             do
                 echo -n "."
@@ -184,27 +185,28 @@ if [[ $usr == "root" ]]; then
                         fi
                     fi
 
-                    # Resize des ROOTfs
-                    if [ $prf -eq 1 ]; then
-                        echo "Resize partition /dev/${part[$pdec]} to maximum"
-                        echo "Check the filesystem..."
-                        if [ $dbg -eq 0 ]; then 
-                            e2fsck -f -y -v -C 0 /dev/${part[$pdec]} &> /dev/null
-                        else
-                            e2fsck -f -y -v -C 0 /dev/${part[$pdec]}
-                        fi
-                        echo "Resize filesystem to maximum..."
-                        if [ $dbg -eq 0 ]; then 
-                            resize2fs -p /dev/${part[$pdec]} &> /dev/null
-                        else
-                            resize2fs -p /dev/${part[$pdec]}
-                        fi
-                        echo /dev/${part[$pdec]}
-                        echo "Check the filesystem..."
-                        if [ $dbg -eq 0 ]; then 
-                            e2fsck -f -y -v -C 0 /dev/${part[$pdec]} &> /dev/null
-                        else
-                            e2fsck -f -y -v -C 0 /dev/${part[$pdec]}
+                    if [[ $shrinkdec == "2" ]]; then
+                        # Resize des ROOTfs
+                        if [ $prf -eq 1 ]; then
+                            echo "Resize partition /dev/${part[$pdec]} to maximum"
+                            echo "Check the filesystem..."
+                            if [ $dbg -eq 0 ]; then 
+                                e2fsck -f -y -v -C 0 /dev/${part[$pdec]} &> /dev/null
+                            else
+                                e2fsck -f -y -v -C 0 /dev/${part[$pdec]}
+                            fi
+                            echo "Resize filesystem to maximum..."
+                            if [ $dbg -eq 0 ]; then 
+                                resize2fs -p /dev/${part[$pdec]} &> /dev/null
+                            else
+                                resize2fs -p /dev/${part[$pdec]}
+                            fi
+                            echo "Check the filesystem..."
+                            if [ $dbg -eq 0 ]; then 
+                                e2fsck -f -y -v -C 0 /dev/${part[$pdec]} &> /dev/null
+                            else
+                                e2fsck -f -y -v -C 0 /dev/${part[$pdec]}
+                            fi
                         fi
                     fi
 
@@ -241,8 +243,13 @@ if [[ $usr == "root" ]]; then
                             fi
                         done
 
+                    if [[ $shrinkdec == "2" ]]; then
                         echo ""
                         echo "Partition backup successfully ends..."
+                    elif [[ $shrinkdec == "1" ]]; then
+                        echo ""
+                        echo "Full backup successfully ends..."
+                    fi
                             
                     fi
 
@@ -274,4 +281,3 @@ if [[ $usr == "root" ]]; then
 else
     echo "The script has to be executed as root."
 fi
-

@@ -1,16 +1,20 @@
 #!/bin/bash
 
-echo "wms-one Recovery tool"
+echo "#wms Recovery tool"
 echo "Author: René Zingerle"
 echo "Date: 12.05.2015"
-echo "Version: 0.08 [BETA]"
-echo "Infos: http://wmsblog.rothirsch-tec.at/wmsone_backup/index.html"
+echo "Version: 0.09 [BETA]"
+echo "Info: http://http://wmsblog.rothirsch.tech/wms_backup/"
 echo "---------------------"
 
 usr=$USER
 prf=1
 dbg=0
-imgfol="part_img"
+
+cd $(dirname $0)
+hdir="$PWD/"
+imgfol="${hdir}part_img"
+tmpdir="/tmp/wms_recovery/$(date)/"
 
 if [ $dbg -eq 0 ]; then
      exec="&> /dev/null"
@@ -30,18 +34,18 @@ check_dependencies() {
 }
 
 echo ""
-# Prüfe ober der ausführende Benutzer root ist.
+# Check user for root permissions
 if [[ $usr == "root" ]]; then
 
-    echo "Bitte führen Sie den Datenträger jetzt/erneut in den Card Reader ein!"
-    read -p "Bestätigen Sie mit dem Befehl (mount): " plugged
+    echo "Please insert/reinsert you microSD Card now!"
+    read -p "If the system has recognized the card please write (mount): " plugged
     exit=0
     while [ $exit -eq 0 ]; do
         if [[ $plugged == "mount" ]]; then
             
-            # Warte 5 Sekunde
+            # Give the user 5 seconds to rethink
             wait=5
-            echo -n "Warte für 5 Sekunden ["
+            echo -n "Wait for 5 seconds. Please check if everything is fine ["
             for ((x=0; x<$wait; x++))
             do
                 echo -n "."
@@ -50,17 +54,16 @@ if [[ $usr == "root" ]]; then
             echo "]"
 
             if check_dependencies; then
-                # Wähle Backup
+                # Choose backup
                 if [ $prf -eq 1 ]; then
                    
                     req=0 
                     while [ $req -eq 0 ]; do
 
-                        # Entscheidung welcher Ordner verwendet werden soll 
+                        # Find recovery image folder
                         rq=0
                         while [ $rq -eq 0 ]; do
 
-                            # Lese Inhalt des Backup Ordner
                             i=0
                             echo ""
                             while read p
@@ -70,30 +73,30 @@ if [[ $usr == "root" ]]; then
                                 ((i++))
                             done < <(ls -1 $imgfol)
 
-                            read -p "Welches Backup soll wiederhergestellt werden (Nummer): " bdec
+                            read -p "Choose one of the backups above ([0-9]): " bdec
                             re='^[0-9]+$'
                             if [ $bdec -lt 0 ] || [ $bdec -gt ${#fol[@]} ] || ! [[ $bdec =~ $re ]]; then
-                                echo "Auswahl nicht möglich"
+                                echo "Unknown parameter."
                             else
                                 if [ -e ${imgfol}/${fol[bdec]}/state.txt ]; then
-                                    echo "Verwende Ordner ${imgfol}/${fol[bdec]}"
+                                    echo "Use directory ${imgfol}/${fol[bdec]}"
                                     rq=1
                                 else
                                     imgfol="${imgfol}/${fol[bdec]}"
-                                    echo "Unterordner erkannt: Wähle erneut:"
+                                    echo "Sub directory recognized by script!"
                                 fi
                             fi
                         done
 
-                        # Lesen der Beschreibung
+                        # Output commit
                         echo ""
-                        echo "Beschreibung: "
+                        echo "Commit: "
                         cat ${imgfol}/${fol[bdec]}/comment.txt 
                         echo "--------------"
                         rq=1
 
                         # Entgültige Entscheidung
-                        read -p "Soll dieses Backup verwendet werden? (y/n): " cdec
+                        read -p "Do you wanna use this backup? (y/n): " cdec
                         rq=0 
                         while [ $rq -eq 0 ]; do
                             if [[ $cdec == "y" ]]; then
@@ -102,7 +105,7 @@ if [[ $usr == "root" ]]; then
                             elif [[ $cdec == "n" ]]; then
                                 rq=1
                             else 
-                                read -p "Auswahl nicht möglich (y/n): " cdec
+                                read -p "Unknown parameter (y/n): " cdec
                             fi
                         done
                     done
@@ -113,32 +116,32 @@ if [[ $usr == "root" ]]; then
                     elif [[ $(cat ${imgfol}/${fol[$bdec]}/state.txt) == "Partition" ]]; then
                         state="part"
                     else
-                        echo "Es wurde keine Information darüber gefunden, ob es sich um ein Volles oder Partitions Backup handelt." 
-                        echo "[1] Vollbackup"
-                        echo "[2] Partitionsbackup"
-                        read -p "Wahl: " sdec
+                        echo "Missing Information in backup directory please help with following information: " 
+                        echo "[1] Fullbackup"
+                        echo "[2] Partitionbackup"
+                        read -p "Choose: " sdec
                         if [ $sdec -eq 1 ]; then
                             state="full"
                         elif [ $sdec -eq 2 ]; then
                             state="part"
                         else
-                            echo "Auswahl nicht möglich beende Script"
+                            echo "Unknown parameter, end script..."
                             exit
                         fi
                     fi
                         
                 fi
 
-                # Starte den Wiederherstellungsprozess
+                # Start the recovery process
                 if [ $prf -eq 1 ]; then
                     echo ""
-                    echo "-- Recovery gestartet --"
-                    echo "Verwende Backup: ${fol[$bdec]}"
-                    rm -rf tmp/*
+                    echo "-- Start recovery --"
+                    echo "Use Backup: ${fol[$bdec]}"
+                    rm -rf ${tmpdir}*
                 fi
 
-                # Suche der Speichermedien und bereite sie zu einem Auswahlmenü zu
-                i=0             # Zähler
+                # Show devices
+                i=0
                 echo ""
                 while read p
                 do
@@ -150,10 +153,10 @@ if [[ $usr == "root" ]]; then
                     fi
                     ((i++))
                 done < <(lsblk -d -o NAME)
-                read -p "Welchen Datenträger möchten Sie verwenden (Nummer): " ddec
+                read -p "Choose device ([0-9]): " ddec
 
 
-                # Wähle Datenträger
+                # Choose device
                 if [ $prf -eq 1 ]; then 
 
                     if [[ $state == "part" ]]; then
@@ -161,12 +164,12 @@ if [[ $usr == "root" ]]; then
                         # Hole Informationen
                         if [ $prf -eq 1 ]; then
                             echo ""
-                            echo "Kopiere Ordner"
-                            cp -a ${imgfol}/${fol[$bdec]}/*.gz tmp/
+                            echo "Copy directory"
+                            cp -a ${imgfol}/${fol[$bdec]}/*.gz ${tmpdir}
 
-                            echo "Entpacke gzip Archiv und ermitteln der Größe..."
+                            echo "Extract gzip archive and find size..."
                             i=0
-                            for x in tmp/*
+                            for x in ${tmpdir}*
                             do
                                 echo -n "$x..."
                                 gunzip $x
@@ -181,35 +184,35 @@ if [[ $usr == "root" ]]; then
                             # Vergrößern eines Datenträgers
                             while [[ $sidc != "y"  ]] && [[ $sidc != "n" ]] 
                             do
-                                read -p "Soll die letzte Partition erweitert werden? (y/n): " sidc
+                                read -p "Do you want to resize the last partition to maximum? (y/n): " sidc
                                 if [[ $sidc == "y" ]]; then
                                     size[$i]=""
-                                    echo "Letzte Partition wird erweitert..."
+                                    echo "Extend partition..."
                                 elif [[ $sidc == "n" ]]; then
-                                    echo "Fahre fort..."
+                                    echo "Go ahead..."
                                 else
-                                    read -p "Auswahl nicht möglich!... " sidc
+                                    read -p "Unknown parameter!... (y/n): " sidc
                                 fi  
                             done
                         fi
 
-                        read -p "Der komplette Datenträger ${device[$ddec]} wird überschrieben (y/n): " dec
+                        read -p "The complete device ${device[$ddec]} will be overwritten (y/n): " dec
                         if [[ $dec == "y" ]]; then
 
                             if [ $prf -eq 1 ]; then
-                                read -p "Kompletten Datenträger mit Nullen überschreiben? (y/n): " dec
+                                read -p "Overwrite complete device with NULL? This will erase everything (y/n): " dec
                                 if [[ $dec == "y" ]]; then
-                                    read -p "Die Lebensdauer eine SD Karte ist von ihren Schreibzyklen abhängig. Trotzdem fortfahren? (y/n): " dec
+                                    read -p "The maximum lifte time of a SDcard dependc on the write cykle to the card. (y/n): " dec
                                     if [[ $dec == "y" ]]; then
-                                        echo "Überschreibe den kompletten Datenträger ${device[$ddec]} mit /dev/null ..."
+                                        echo "Overwrite the complete device ${device[$ddec]} with /dev/null ..."
                                         pv -tpreb /dev/zero | dd of=/dev/${device[$ddec]} bs=32M conv=noerror
                                     fi
                                 fi
                             fi
 
-                            # Suche der Partitionen und deren Größen im Format Byte
+                            # Find partition and there sizes
                             if [ $prf -eq 1 ]; then
-                                i=0             # Zähler
+                                i=0
                                 while read p
                                 do
                                     if [[ $p == *${device[$ddec]}* ]]; then
@@ -225,36 +228,33 @@ if [[ $usr == "root" ]]; then
                             fi
 
                             if [ $prf -eq 1 ]; then
-                            # Entferne den freien Speicher auf der ausgewählten Partition und entferne es
-                                echo "Prüfe ob das Dateisystem ${part[$pdec]} einhängt/gemountet ist."
+                            # Remove empty space on partition
+                                echo "Check mount state of the device ${part[$pdec]}"
                                 for (( x=0; x<${#part[@]}; x++ ));
                                 do
-                                    if [ $x -ne 0 ]; then
-                                        if mountpoint -q /dev/${part[$x]}; then
-                                            echo "${part[$x]} ist eingehängt. Entferne..."
-                                            if [ $dbg -eq 0 ]; then 
-                                                umount /dev/${part[$x]} &> /dev/null
-                                            else
-                                                umount /dev/${part[$x]}
-                                            fi
-                                        elif mount -l | grep /dev/${part[$x]}; then
-                                            echo "${part[$x]} ist eingehängt. Entferne..."
-                                            if [ $dbg -eq 0 ]; then 
-                                                umount /dev/${part[$x]} &> /dev/null
-                                            else
-                                                umount /dev/${part[$x]}
-                                            fi
+                                    if mountpoint -q /dev/${part[$x]}; then
+                                        echo "${part[$x]} is mounted. Umount... "
+                                        if [ $dbg -eq 0 ]; then 
+                                            umount /dev/${part[$x]} &> /dev/null
                                         else
-                                            echo "${part[$x]} ist nicht eingehängt. Fahre fort..."
+                                            umount /dev/${part[$x]}
                                         fi
+                                    elif mount -l | grep /dev/${part[$x]}; then
+                                        echo "${part[$x]} is mounted. Umount... "
+                                        if [ $dbg -eq 0 ]; then 
+                                            umount /dev/${part[$x]} &> /dev/null
+                                        else
+                                            umount /dev/${part[$x]}
+                                        fi
+                                    else
+                                        echo "${part[$x]} isn't mounted. Go ahead..."
                                     fi
                                 done
                             fi
 
-                            # Löschen der bestehenden Partition
+                            # Delete existing partitions
                             if [ $prf -eq 1 ]; then
-                                echo "Lösche alle Partition auf dem Datenträger ${device[$ddec]} ..."
-                                #(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
+                                echo "Delete all partitions on the device ${device[$ddec]} ..."
 
                                 for (( x=(${#part[@]} - 1);  x > 0; x-- )); do
                                     echo "Delete Partition: ${part[$x]}"
@@ -317,16 +317,16 @@ if [[ $usr == "root" ]]; then
                                 echo "!! Bitte warten Sie auch wenn der Vorgang 100% erreicht hat... !!"
                                 echo ""
                                 i=1
-                                for x in tmp/*
+                                for x in ${tmpdir}*
                                 do
                                     pv -tpreb $x | dd of=/dev/${part[$i]} bs=4M conv=notrunc,noerror
 
                                     if [ $i -gt 1 ]; then
                                         echo "Überprüfe das Dateisystem..."
                                         if [ $dbg -eq 0 ]; then 
-                                            e2fsck -f /dev/${part[$i]} &> /dev/null
+                                            e2fsck -f -y -v -C 0 /dev/${part[$i]} &> /dev/null
                                         else
-                                            e2fsck -f /dev/${part[$i]}
+                                            e2fsck -f -y -v -C 0 /dev/${part[$i]}
                                         fi
                                         echo "Vergrößere Dateisystem auf maximum..."
                                         if [ $dbg -eq 0 ]; then 
@@ -336,9 +336,9 @@ if [[ $usr == "root" ]]; then
                                         fi
                                         echo "Überprüfe das Dateisystem..."
                                         if [ $dbg -eq 0 ]; then 
-                                            e2fsck -f /dev/${part[$i]} &> /dev/null
+                                            e2fsck -f -y -v -C 0 /dev/${part[$i]} &> /dev/null
                                         else
-                                            e2fsck -f /dev/${part[$i]}
+                                            e2fsck -f -y -v -C 0 /dev/${part[$i]}
                                         fi
                                     fi
                                     (( i++ ))
