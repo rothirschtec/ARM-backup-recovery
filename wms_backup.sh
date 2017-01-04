@@ -16,7 +16,7 @@ hdir="$PWD/"
 imgfol="${hdir}part_img"
 
 check_dependencies() {
-    dep=("ntp" "ntpdate" "pv")
+    dep=("ntp" "ntpdate" "pv" "uuid-runtime")
 
     for x in "${dep[@]}"; do
         dpkg-query -W $x &> /dev/null
@@ -30,6 +30,16 @@ check_dependencies() {
 }
 check_dependencies
 
+# Temporary dir
+runID=$(uuidgen)
+tdir=/tmp/wms_backup/${runID}/
+mkdir -p $tdir
+# #
+
+# Info files
+pinfo=${tdir}pinfo.sh
+# #
+
 # Check user for root permissions
 if [[ $usr == "root" ]]; then
 
@@ -41,7 +51,7 @@ if [[ $usr == "root" ]]; then
         if [[ $plugged == "mount" ]]; then
             
             # Warte 5 Sekunde
-            wait=5
+            wait=0
             echo -n "Wait for 5 seconds. Please check if everything is fine ["
             for ((x=0; x<$wait; x++))
             do
@@ -54,16 +64,16 @@ if [[ $usr == "root" ]]; then
                
                 echo "Choose between following Options: "
                 echo    "[1] Complete Backup of the card. (writes the complete card to the image. The image will have the same size as your card has.)" 
-                echo    "[2] Shrink der ROOTfs partition (backup image will have the size of you ROOTfs)"
-                read -p "Choose (1/2): " shrinkdec
+                echo    "[2] Shrink der ROOTfs partition (backup image will have the size of your ROOTfs)"
+                read -p "Choose (1/2): " shrink
 
-                if [[ $shrinkdec == "1" ]]; then
+                if [[ $shrink == "1" ]]; then
                     echo "Command accepted, create Full Backup!"
-                elif [[ $shrinkdec == "2" ]]; then
+                elif [[ $shrink == "2" ]]; then
                     echo "Command accepted, create Small Backup!"
                 fi
 
-                if [[ $shrinkdec == "1" ]] || [[ $shrinkdec == "2" ]]; then
+                if [[ $shrink == "1" ]] || [[ $shrink == "2" ]]; then
 
                     if [ $prf -eq 1 ]; then
                     # Create part_img fol
@@ -76,18 +86,50 @@ if [[ $usr == "root" ]]; then
                         while read p
                         do
                             if [ $i -ne 0 ]; then
-                                device[$i]=$p
-                                echo "[$i] ${device[$i]}"
+                                devices[$i]=$p
+                                echo "[$i] ${devices[$i]}"
                             else
                                 part[$i]="Disk Array"
                             fi
                             ((i++))
                         done < <(lsblk -d -o NAME)
                         read -p "Choose your backup device [0-9]: " ddec
-                        partprobe /dev/${device[$ddec]} 
+                        partprobe /dev/${devices[$ddec]} 
+                    fi
+    
+                    if [[ $shrink == "2" ]]; then
+
+                        # Create image structure for later recovery
+                        if [ $prf -eq 1 ]; then
+                            # Show free space
+                            i=0
+                            c=0
+                            parted /dev/mmcblk0 unit s print free > ${pinfo}.orig
+                            parted /dev/mmcblk0 unit s print free |awk '{print $1, $2, $3, $4, $5, $6}' |grep B | while read x 
+                            do
+                                case $i in
+                                0)
+                                    echo "csize=$(echo $x |awk '{print $3}')" > ${pinfo}
+                                    ;;
+                                1)
+                                    echo "ssize=$(echo $x |awk '{print $4}')" >> ${pinfo}
+                                    ;;
+                                *)
+                                    type=$(echo $x |awk '{print $4}')
+                                    if [[ $type == "Free" ]]; then
+                                        echo "opsize[$c]=Free;$(echo $x | awk 'BEGIN { FS=" "; OFS=";"; } {print $1,$2,$3}')" >> ${pinfo}
+                                    else
+                                        echo "opsize[$c]=Part;$(echo $x | awk 'BEGIN { FS=" "; OFS=";"; } {print $2,$3,$4}')" >> ${pinfo}
+                                    fi
+                                    ((c++))
+                                  ;;
+                                esac 
+                                ((i++))
+                            done
+                        fi
                     fi
 
-                    if [[ $shrinkdec == "2" ]]; then
+                    if [[ $shrink == "2" ]]; then
 
                         # Find partition size in byte
                         if [ $prf -eq 1 ]; then
@@ -102,22 +144,30 @@ if [[ $usr == "root" ]]; then
                             do
                             # Runs through all devices
 
-                                if [[ $p == *${device[$ddec]}* ]] && [[ $p != *${device[$ddec]} ]]; then
+                                if [[ $p == *${devices[$ddec]}* ]] && [[ $p != *${devices[$ddec]} ]]; then
                                     ((i++))
                                     part[$i]=$p
+                                    echo "Find partition size"
+                                    psize[$i]="$(parted /dev/${part[$i]} unit s print | tail -$((1+$i)) | awk '{print $4}')"
+                                    psize[$i]=$(sed 's/s//g' <<<${psize[$i]})
+
+                                    echo "Find start sector of the partition"
+                                    starsec[$i]="$(parted /dev/${devices[$ddec]} unit s print | tail -$((1+$i)) | awk '{print $2}')"
+                                    starsec[$i]=$(sed 's/s//g' <<<${starsec[$i]})
 
                                     # Umount mounted partitions
                                     if mountpoint -q /dev/${part[$i]} &> /dev/null; then
-                                        echo "${part[$i]} ist eingehängt. Entferne..."
+                                        echo "${part[$i]} is mounted, trying to umount..."
                                         umount /dev/${part[$i]} &> /dev/null
                                     elif mount -l | grep /dev/${part[$i]} &> /dev/null; then
-                                        echo "${part[$i]} ist eingehängt. Entferne..."
+                                        echo "${part[$i]} is mounted, trying to umount..."
                                         umount /dev/${part[$i]} &> /dev/null
                                     fi
                                 
                                 fi
 
-                            done < <(lsblk -l -o NAME /dev/${device[$ddec]})
+                            done < <(lsblk -l -o NAME /dev/${devices[$ddec]})
+
                         fi
 
 
@@ -125,13 +175,13 @@ if [[ $usr == "root" ]]; then
                             for (( x=0; x<${#part[@]}; x++ ));
                             do
                                 if [ $x -ne 0 ]; then
-                                    echo "[$x] ${part[$x]} with ${psize[$x]}"
+                                    echo "[$x] ${part[$x]} with a sector size ${psize[$x]}"
                                 fi
                             done
                             read -p "Which one is the parition that should be resized? (ROOTfs): " pdec
                         fi
 
-                        # Shrint partition of ROOTfs
+                        # Shrink partition to ROOTfs size
                         if [ $prf -eq 1 ]; then
 
                             echo "Check filesystem..."
@@ -146,11 +196,8 @@ if [[ $usr == "root" ]]; then
                             ((psizadd=(${rbc}*${bsz})/1000))
                             #read -p "$rbc * $bsz = $psizadd" dec
 
-                            echo "Find start sector of the partition"
-                            starsec=$(fdisk -l |grep /dev/${part[$pdec]} | awk '{ print $2 }')
-
                             echo "Shrink partition size: ${part[$pdec]}..."
-                            (echo d; echo $pdec; echo n; echo p; echo $pdec; echo $starsec ; echo +${psizadd}K; echo w) | fdisk /dev/${device[$ddec]}
+                            (echo d; echo $pdec; echo n; echo p; echo $pdec; echo ${starsec[$pdec]} ; echo +${psizadd}K; echo w) | fdisk /dev/${devices[$ddec]}
 
                             echo "Check the filesystem again..."
                             e2fsck -f /dev/${part[$pdec]}
@@ -165,27 +212,30 @@ if [[ $usr == "root" ]]; then
                         read -p "Name of the backup directory: " bak_fol
                         NOW=${bak_fol}/$(date +"%Y_%m_%dat%H_%M_%S")
                         mkdir -p ${imgfol}/$NOW
+   
+                        echo "MBR Backup" 
+                        pv -tpreb /dev/${devices[$ddec]} | dd bs=512 count=1 | gzip > ${imgfol}/$NOW/mbr_wms.img.gz && sync
 
-                        if [[ $shrinkdec == "2" ]]; then
+                        if [[ $shrink == "2" ]]; then
                             echo "Partition backup..."
                             for (( x=0; x<${#part[@]}; x++ ));
                             do
                                 if [ $x -ne 0 ]; then
                                     echo "Backup ${part[$x]}..."
                                     echo "Please be patient!..."
-                                    pv -tpreb /dev/${part[$x]} | dd bs=4M | gzip > ${imgfol}/$NOW/p${x}_wmsone.img.gz && sync
+                                    pv -tpreb /dev/${part[$x]} | dd bs=4M | gzip > ${imgfol}/$NOW/p${x}_wms.img.gz && sync
                                 fi
                             done
                             echo "Partition" > ${imgfol}/$NOW/state.txt
-                        elif [[ $shrinkdec == "1" ]]; then
+                        elif [[ $shrink == "1" ]]; then
                             echo "Backup the complete filesystem..."
                             echo "Please be patient..."
-                            pv -tpreb /dev/${device[$ddec]} | dd bs=4M | gzip > ${imgfol}/$NOW/complete_wmsone.img.gz && sync
+                            pv -tpreb /dev/${devices[$ddec]} | dd bs=4M | gzip > ${imgfol}/$NOW/complete_wms.img.gz && sync
                             echo "Complete" > ${imgfol}/$NOW/state.txt
                         fi
                     fi
 
-                    if [[ $shrinkdec == "2" ]]; then
+                    if [[ $shrink == "2" ]]; then
                         # Resize des ROOTfs
                         if [ $prf -eq 1 ]; then
                             echo "Resize partition /dev/${part[$pdec]} to maximum"
@@ -197,9 +247,10 @@ if [[ $usr == "root" ]]; then
                             fi
                             echo "Resize filesystem to maximum..."
                             if [ $dbg -eq 0 ]; then 
-                                resize2fs -p /dev/${part[$pdec]} &> /dev/null
-                            else
-                                resize2fs -p /dev/${part[$pdec]}
+                                echo "(echo d; echo $pdec; echo n; echo p; echo $pdec; echo ${starsec[$pdec]} ; echo ${psize[$pdec]}; echo w) | fdisk /dev/${devices[$ddec]}"
+
+                                (echo d; echo $pdec; echo n; echo p; echo $pdec; echo ${starsec[$pdec]} ; echo ${psize[$pdec]}; echo w) | fdisk /dev/${devices[$ddec]}
+                                resize2fs /dev/${part[$pdec]} 
                             fi
                             echo "Check the filesystem..."
                             if [ $dbg -eq 0 ]; then 
@@ -207,6 +258,12 @@ if [[ $usr == "root" ]]; then
                             else
                                 e2fsck -f -y -v -C 0 /dev/${part[$pdec]}
                             fi
+                        fi
+
+                        # Copy files
+                        if [ $prf -eq 1 ]; then
+                            mv ${pinfo} ${imgfol}/$NOW/
+                            mv ${pinfo}.orig ${imgfol}/$NOW/
                         fi
                     fi
 
@@ -243,10 +300,10 @@ if [[ $usr == "root" ]]; then
                             fi
                         done
 
-                    if [[ $shrinkdec == "2" ]]; then
+                    if [[ $shrink == "2" ]]; then
                         echo ""
                         echo "Partition backup successfully ends..."
-                    elif [[ $shrinkdec == "1" ]]; then
+                    elif [[ $shrink == "1" ]]; then
                         echo ""
                         echo "Full backup successfully ends..."
                     fi
