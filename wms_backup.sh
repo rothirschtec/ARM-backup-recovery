@@ -2,8 +2,8 @@
 
 echo "#wms Backup tool"
 echo "Author: René Zingerle"
-echo "Date: 07.12.2016"
-echo "Version: 0.09 [BETA]"
+echo "Date: 04.01.2017"
+echo "Version: 0.10 [BETA]"
 echo "Info: http://http://wmsblog.rothirsch.tech/wms_backup/"
 echo "---------------------"
 
