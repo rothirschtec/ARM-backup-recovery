@@ -45,6 +45,8 @@ echo "---------------------"
     tdir=/tmp/wms_backup/${runID}/
     bLog=${tdir}backup.log
     mkdir -p $tdir
+
+    pinfo=${tdir}pinfo.sh
 #
 # # #
 
@@ -176,6 +178,39 @@ if [[ $usr == "root" ]]; then
 
 
                     # # #
+                    # Create image structure for later recovery
+                        if [ $prf -eq 1 ]; then
+                            i=0
+                            c=0
+                            p=1
+                            parted /dev/${devices[$ddec]} unit s print free > ${pinfo}.orig
+
+                            parted /dev/${devices[$ddec]} unit s print free |awk '{print $1, $2, $3, $4, $5, $6}' |grep [0-9]s | while read x 
+                            do
+                                case $i in
+                                0)
+                                    echo "csize=\"$(echo $x |awk '{print $3}')\"" > ${pinfo}
+                                    ;;
+                                *)
+                                    type=$(echo $x |awk '{print $4}')
+                                    if [[ $type == "Free" ]]; then
+                                        echo "opsize[$c]=\"Free;$(echo $x | awk 'BEGIN { FS=" "; OFS=";"; } {print $1,$2,$3}')\"" >> ${pinfo}
+                                    else
+                                        echo "opsize[$c]=\"P$p;$(echo $x | awk 'BEGIN { FS=" "; OFS=";"; } {print $2,$3,$4}')\"" >> ${pinfo}
+                                        ((p++))
+                                    fi
+                                    ((c++))
+                                  ;;
+                                esac
+                                ((i++))
+                            done
+                            source ${pinfo}
+                        fi
+                    #
+                    # # #
+                    
+
+                    # # #
                     # Shrink partition to ROOTfs size
                         if [ $prf -eq 1 ]; then
 
@@ -194,7 +229,7 @@ if [[ $usr == "root" ]]; then
                             ((psizadd=(${rbc}*${bsz})/1000))
 
                             echo "Shrink partition size: ${part[$pdec]}..."
-                            (echo d; echo $pdec; echo n; echo p; echo $pdec; echo ${starsec[$(bc -l <<< "${pdec} - 1")]} ; echo +${psizadd}K; echo w) | fdisk /dev/${devices[$ddec]}
+                            (echo d; echo $pdec; echo n; echo p; echo $pdec; echo ${starsec[$(bc -l <<< "${pdec} - 1")]} ; echo +${psizadd}K; echo w) | fdisk /dev/${devices[$ddec]} >> $bLog
 
                             echo "Check the filesystem again..."
                             e2fsck -f -y /dev/${part[$pdec]} >> $bLog
@@ -213,6 +248,7 @@ if [[ $usr == "root" ]]; then
                         NOW=${bak_fol}/$(date +"%Y_%m_%dat%H_%M_%S")
                         mkdir -p ${imgfol}/$NOW
    
+                        echo ""
                         echo "MBR Backup" 
                         mbr=$(echo ${opsize[0]} |awk 'BEGIN { FS=";"; OFS=";";} {print $4}')
                         mbr=$(sed 's/s//g' <<< $mbr)
@@ -223,6 +259,7 @@ if [[ $usr == "root" ]]; then
                             for (( x=0; x<${#part[@]}; x++ ));
                             do
                                 if [ $x -ne 0 ]; then
+                                    echo ""
                                     echo "Backup ${part[$x]}..."
                                     echo "Please be patient!..."
                                     pv -tpreb /dev/${part[$x]} | dd bs=4M | gzip > ${imgfol}/$NOW/p${x}_wms.img.gz && sync
@@ -235,7 +272,9 @@ if [[ $usr == "root" ]]; then
                             pv -tpreb /dev/${devices[$ddec]} | dd bs=4M | gzip > ${imgfol}/$NOW/complete_wms.img.gz && sync
                             echo "Complete" > ${imgfol}/$NOW/state.txt
                         fi
+                        echo ""
                     fi
+
 
                     if [[ $shrink == "2" ]]; then
                         # Resize des ROOTfs
@@ -250,7 +289,7 @@ if [[ $usr == "root" ]]; then
                             echo "Resize filesystem to maximum..."
                             if [ $dbg -eq 0 ]; then 
 
-                                (echo d; echo $pdec; echo n; echo p; echo $pdec; echo ${starsec[$(bc -l <<< "${pdec} - 1")]} ; echo ${psize[$pdec]}; echo w) | fdisk /dev/${devices[$ddec]}
+                                (echo d; echo $pdec; echo n; echo p; echo $pdec; echo ${starsec[$(bc -l <<< "${pdec} - 1")]} ; echo ${psize[$(bc -l <<< "${pdec} - 1")]}; echo w) | fdisk /dev/${devices[$ddec]} >> $bLog
                                 resize2fs /dev/${part[$pdec]} 
                             fi
                             echo "Check the filesystem..."
@@ -259,6 +298,12 @@ if [[ $usr == "root" ]]; then
                             else
                                 e2fsck -f -y -C 0 /dev/${part[$pdec]}
                             fi
+                        fi
+    
+                        # Copy files
+                        if [ $prf -eq 1 ]; then
+                            mv ${pinfo} ${imgfol}/$NOW/
+                            mv ${pinfo}.orig ${imgfol}/$NOW/
                         fi
 
                     fi
