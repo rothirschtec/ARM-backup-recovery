@@ -50,9 +50,9 @@ if [[ $usr == "root" ]]; then
     while [ $exit -eq 0 ]; do
         if [[ $plugged == "mount" ]]; then
             
-            # Warte 5 Sekunde
-            wait=0
-            echo -n "Wait for 5 seconds. Please check if everything is fine ["
+            # Warte 3 Sekunde
+            wait=3
+            echo -n "Wait for $wait seconds. Please check if everything is fine ["
             for ((x=0; x<$wait; x++))
             do
                 echo -n "."
@@ -61,10 +61,15 @@ if [[ $usr == "root" ]]; then
             echo "]"
 
             if check_dependencies; then
-               
+              
+                echo "" 
                 echo "Choose between following Options: "
-                echo    "[1] Complete Backup of the card. (writes the complete card to the image. The image will have the same size as your card has.)" 
-                echo    "[2] Shrink der ROOTfs partition (backup image will have the size of your ROOTfs)"
+                echo "  [1] Complete Backup of the card."
+                echo "      (Writes the complete card to the image. The image will have the same size as your card has.)" 
+
+                echo "  [2] Shrink der ROOTfs partition"
+                echo "      (Image will have the size of your ROOTfs)"
+
                 read -p "Choose (1/2): " shrink
 
                 if [[ $shrink == "1" ]]; then
@@ -104,28 +109,27 @@ if [[ $usr == "root" ]]; then
                             # Show free space
                             i=0
                             c=0
-                            parted /dev/mmcblk0 unit s print free > ${pinfo}.orig
-                            parted /dev/mmcblk0 unit s print free |awk '{print $1, $2, $3, $4, $5, $6}' |grep B | while read x 
+                            p=0
+                            parted /dev/${devices[$ddec]} unit s print free > ${pinfo}.orig
+                            parted /dev/${devices[$ddec]} unit s print free |awk '{print $1, $2, $3, $4, $5, $6}' |grep [0-9]s | while read x 
                             do
                                 case $i in
                                 0)
-                                    echo "csize=$(echo $x |awk '{print $3}')" > ${pinfo}
-                                    ;;
-                                1)
-                                    echo "ssize=$(echo $x |awk '{print $4}')" >> ${pinfo}
+                                    echo "csize=\"$(echo $x |awk '{print $3}')\"" > ${pinfo}
                                     ;;
                                 *)
                                     type=$(echo $x |awk '{print $4}')
                                     if [[ $type == "Free" ]]; then
-                                        echo "opsize[$c]=Free;$(echo $x | awk 'BEGIN { FS=" "; OFS=";"; } {print $1,$2,$3}')" >> ${pinfo}
+                                        echo "opsize[$c]=\"Free;$(echo $x | awk 'BEGIN { FS=" "; OFS=";"; } {print $1,$2,$3}')\"" >> ${pinfo}
                                     else
-                                        echo "opsize[$c]=Part;$(echo $x | awk 'BEGIN { FS=" "; OFS=";"; } {print $2,$3,$4}')" >> ${pinfo}
+                                        echo "opsize[$c]=\"P$p;$(echo $x | awk 'BEGIN { FS=" "; OFS=";"; } {print $2,$3,$4}')\"" >> ${pinfo}
                                     fi
                                     ((c++))
                                   ;;
                                 esac 
                                 ((i++))
                             done
+                            source ${pinfo}
                         fi
                     fi
 
@@ -139,6 +143,8 @@ if [[ $usr == "root" ]]; then
                             part[$i]="Part Array"       # @param part: Array for partitions
                             psize[$i]="Partition Sizes" # @param psize: Array for partition size
 
+                            echo ""
+                            echo "Find partition size and sectors..."
                             # MAIN
                             while read p
                             do
@@ -147,11 +153,12 @@ if [[ $usr == "root" ]]; then
                                 if [[ $p == *${devices[$ddec]}* ]] && [[ $p != *${devices[$ddec]} ]]; then
                                     ((i++))
                                     part[$i]=$p
-                                    echo "Find partition size"
-                                    psize[$i]="$(parted /dev/${part[$i]} unit s print | tail -$((1+$i)) | awk '{print $4}')"
+
+                                    # Find Size
+                                    psize[$i]="$(parted /dev/${devices[$ddec]} unit s print | tail -$((1+$i)) | awk '{print $4}')"
                                     psize[$i]=$(sed 's/s//g' <<<${psize[$i]})
 
-                                    echo "Find start sector of the partition"
+                                    # Find start sector of the partition
                                     starsec[$i]="$(parted /dev/${devices[$ddec]} unit s print | tail -$((1+$i)) | awk '{print $2}')"
                                     starsec[$i]=$(sed 's/s//g' <<<${starsec[$i]})
 
@@ -163,6 +170,9 @@ if [[ $usr == "root" ]]; then
                                         echo "${part[$i]} is mounted, trying to umount..."
                                         umount /dev/${part[$i]} &> /dev/null
                                     fi
+
+                                    plabel[$i]=$(awk -F'"' '{print $2;}' <<< $(awk '{print $2;}' <<< $(blkid /dev/${part[$i]})))
+
                                 
                                 fi
 
@@ -175,17 +185,17 @@ if [[ $usr == "root" ]]; then
                             for (( x=0; x<${#part[@]}; x++ ));
                             do
                                 if [ $x -ne 0 ]; then
-                                    echo "[$x] ${part[$x]} with a sector size ${psize[$x]}"
+                                    echo "[$x] ${part[$x]} with Label: ${plabel[$x]} and a sector size of: ${psize[$x]}"
                                 fi
                             done
-                            read -p "Which one is the parition that should be resized? (ROOTfs): " pdec
+                            read -p "Which one is the ROOTfs? [1-$(bc -l <<< "$x - 1")]: " pdec
                         fi
 
                         # Shrink partition to ROOTfs size
                         if [ $prf -eq 1 ]; then
 
                             echo "Check filesystem..."
-                            e2fsck -f /dev/${part[$pdec]}
+                            e2fsck -f -y /dev/${part[$pdec]}
 
                             echo "Shrink filesystem ${part[$pdec]}... "
                             resize2fs -M /dev/${part[$pdec]} 
@@ -200,7 +210,7 @@ if [[ $usr == "root" ]]; then
                             (echo d; echo $pdec; echo n; echo p; echo $pdec; echo ${starsec[$pdec]} ; echo +${psizadd}K; echo w) | fdisk /dev/${devices[$ddec]}
 
                             echo "Check the filesystem again..."
-                            e2fsck -f /dev/${part[$pdec]}
+                            e2fsck -f -y /dev/${part[$pdec]}
 
                         fi
                     fi
@@ -214,7 +224,9 @@ if [[ $usr == "root" ]]; then
                         mkdir -p ${imgfol}/$NOW
    
                         echo "MBR Backup" 
-                        pv -tpreb /dev/${devices[$ddec]} | dd bs=512 count=1 | gzip > ${imgfol}/$NOW/mbr_wms.img.gz && sync
+                        mbr=$(echo ${opsize[0]} |awk 'BEGIN { FS=";"; OFS=";";} {print $4}')
+                        mbr=$(sed 's/s//g' <<< $mbr)
+                        pv -tpreb /dev/${devices[$ddec]} | dd bs=$mbr count=1 | gzip > ${imgfol}/$NOW/mbr_wms.img.gz && sync
 
                         if [[ $shrink == "2" ]]; then
                             echo "Partition backup..."
@@ -241,22 +253,21 @@ if [[ $usr == "root" ]]; then
                             echo "Resize partition /dev/${part[$pdec]} to maximum"
                             echo "Check the filesystem..."
                             if [ $dbg -eq 0 ]; then 
-                                e2fsck -f -y -v -C 0 /dev/${part[$pdec]} &> /dev/null
+                                e2fsck -f -y -C 0 /dev/${part[$pdec]} &> /dev/null
                             else
-                                e2fsck -f -y -v -C 0 /dev/${part[$pdec]}
+                                e2fsck -f -y -C 0 /dev/${part[$pdec]}
                             fi
                             echo "Resize filesystem to maximum..."
                             if [ $dbg -eq 0 ]; then 
-                                echo "(echo d; echo $pdec; echo n; echo p; echo $pdec; echo ${starsec[$pdec]} ; echo ${psize[$pdec]}; echo w) | fdisk /dev/${devices[$ddec]}"
 
                                 (echo d; echo $pdec; echo n; echo p; echo $pdec; echo ${starsec[$pdec]} ; echo ${psize[$pdec]}; echo w) | fdisk /dev/${devices[$ddec]}
                                 resize2fs /dev/${part[$pdec]} 
                             fi
                             echo "Check the filesystem..."
                             if [ $dbg -eq 0 ]; then 
-                                e2fsck -f -y -v -C 0 /dev/${part[$pdec]} &> /dev/null
+                                e2fsck -f -y -C 0 /dev/${part[$pdec]} &> /dev/null
                             else
-                                e2fsck -f -y -v -C 0 /dev/${part[$pdec]}
+                                e2fsck -f -y -C 0 /dev/${part[$pdec]}
                             fi
                         fi
 
