@@ -2,8 +2,8 @@
 
 echo "wms-one Recovery tool"
 echo "Author: René Zingerle"
-echo "Date: 12.05.2015"
-echo "Version: 0.08 [BETA]"
+echo "Date: 08.08.2015"
+echo "Version: 0.09 [BETA]"
 echo "Infos: http://wmsblog.rothirsch-tec.at/wmsone_backup/index.html"
 echo "---------------------"
 
