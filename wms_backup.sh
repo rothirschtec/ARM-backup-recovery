@@ -2,63 +2,64 @@
 
 echo "#wms Backup tool"
 echo "Author: René Zingerle"
-echo "Date: 04.01.2017"
-echo "Version: 0.10 [BETA]"
+echo "Date: 08.08.2017"
+echo "Version: 0.11 [BETA]"
 echo "Info: http://http://wmsblog.rothirsch.tech/wms_backup/"
 echo "---------------------"
 
-usr=$USER
-prf=1
-dbg=0
 
-cd $(dirname $0)
-hdir="$PWD/"
-imgfol="${hdir}part_img"
+# # #
+# Check dependencies
+    check_dependencies() {
 
-check_dependencies() {
-    dep=("ntp" "ntpdate" "pv" "uuid-runtime")
+        # # #
+        # Checks dependencies and tries to install them
+        dep=("ntp" "ntpdate" "pv" "uuid-runtime")
 
-    for x in "${dep[@]}"; do
-        dpkg-query -W $x &> /dev/null
-        if [ $? -eq 1 ]; then
-            echo "$x: is not installed"
-            apt-get -y install $x
-            ni=1
-        fi
-    done
-    return $ni
-}
-check_dependencies
+        for x in "${dep[@]}"; do
+            dpkg-query -W $x &> /dev/null
+            if [ $? -eq 1 ]; then
+                echo "$x: is not installed"
+                apt-get -y install $x
+                ni=1
+            fi
+        done
+        return $ni
+    }
+    check_dependencies
+#
+# # #
 
-# Temporary dir
-runID=$(uuidgen)
-tdir=/tmp/wms_backup/${runID}/
-mkdir -p $tdir
-# #
 
-# Info files
-pinfo=${tdir}pinfo.sh
-# #
+# # #
+# Declare variables
+    usr=$USER
+    prf=1
+    dbg=0
 
-# Check user for root permissions
+    cd $(dirname $0)
+    hdir="$PWD/"
+    imgfol="${hdir}part_img"
+
+    runID=$(uuidgen)
+    tdir=/tmp/wms_backup/${runID}/
+    mkdir -p $tdir
+#
+# # #
+
+
+# # #
+#
 if [[ $usr == "root" ]]; then
 
     echo ""
     echo "Please insert/reinsert you microSD Card now!"
     read -p "If the system has recognized the card please write (mount): " plugged
     exit=0
+
     while [ $exit -eq 0 ]; do
+
         if [[ $plugged == "mount" ]]; then
-            
-            # Warte 3 Sekunde
-            wait=3
-            echo -n "Wait for $wait seconds. Please check if everything is fine ["
-            for ((x=0; x<$wait; x++))
-            do
-                echo -n "."
-                sleep 1
-            done
-            echo "]"
 
             if check_dependencies; then
               
@@ -102,67 +103,38 @@ if [[ $usr == "root" ]]; then
                         partprobe /dev/${devices[$ddec]} 
                     fi
     
-                    if [[ $shrink == "2" ]]; then
-
-                        # Create image structure for later recovery
-                        if [ $prf -eq 1 ]; then
-                            # Show free space
-                            i=0
-                            c=0
-                            p=0
-                            parted /dev/${devices[$ddec]} unit s print free > ${pinfo}.orig
-                            parted /dev/${devices[$ddec]} unit s print free |awk '{print $1, $2, $3, $4, $5, $6}' |grep [0-9]s | while read x 
-                            do
-                                case $i in
-                                0)
-                                    echo "csize=\"$(echo $x |awk '{print $3}')\"" > ${pinfo}
-                                    ;;
-                                *)
-                                    type=$(echo $x |awk '{print $4}')
-                                    if [[ $type == "Free" ]]; then
-                                        echo "opsize[$c]=\"Free;$(echo $x | awk 'BEGIN { FS=" "; OFS=";"; } {print $1,$2,$3}')\"" >> ${pinfo}
-                                    else
-                                        echo "opsize[$c]=\"P$p;$(echo $x | awk 'BEGIN { FS=" "; OFS=";"; } {print $2,$3,$4}')\"" >> ${pinfo}
-                                    fi
-                                    ((c++))
-                                  ;;
-                                esac 
-                                ((i++))
-                            done
-                            source ${pinfo}
-                        fi
-                    fi
 
                     if [[ $shrink == "2" ]]; then
 
-                        # Find partition size in byte
+                    # # #
+                    # Find partition size in byte
                         if [ $prf -eq 1 ]; then
 
-                            # HEAD
                             i=0
-                            part[$i]="Part Array"       # @param part: Array for partitions
-                            psize[$i]="Partition Sizes" # @param psize: Array for partition size
+                            part[$i]="Part Array"       
+                                # @param part: Array for partitions
+                            psize[$i]="Partition Sizes" 
+                                # @param psize: Array for partition size
 
                             echo ""
                             echo "Find partition size and sectors..."
-                            # MAIN
-                            while read p
-                            do
-                            # Runs through all devices
 
+                            while read p # Runs through all devices
+                            do
+                    
                                 if [[ $p == *${devices[$ddec]}* ]] && [[ $p != *${devices[$ddec]} ]]; then
                                     ((i++))
                                     part[$i]=$p
 
-                                    # Find Size
+                        # Find Size
                                     psize[$i]="$(parted /dev/${devices[$ddec]} unit s print | tail -$((1+$i)) | awk '{print $4}')"
                                     psize[$i]=$(sed 's/s//g' <<<${psize[$i]})
 
-                                    # Find start sector of the partition
+                        # Find start sector of the partition
                                     starsec[$i]="$(parted /dev/${devices[$ddec]} unit s print | tail -$((1+$i)) | awk '{print $2}')"
                                     starsec[$i]=$(sed 's/s//g' <<<${starsec[$i]})
-
-                                    # Umount mounted partitions
+                    
+                        # Umount mounted partitions
                                     if mountpoint -q /dev/${part[$i]} &> /dev/null; then
                                         echo "${part[$i]} is mounted, trying to umount..."
                                         umount /dev/${part[$i]} &> /dev/null
@@ -171,6 +143,7 @@ if [[ $usr == "root" ]]; then
                                         umount /dev/${part[$i]} &> /dev/null
                                     fi
 
+                        # Find label name
                                     plabel[$i]=$(awk -F'"' '{print $2;}' <<< $(awk '{print $2;}' <<< $(blkid /dev/${part[$i]})))
 
                                 
@@ -179,8 +152,11 @@ if [[ $usr == "root" ]]; then
                             done < <(lsblk -l -o NAME /dev/${devices[$ddec]})
 
                         fi
+                    #
+                    # # #
 
-
+                    # # #
+                    # Show possible decisions
                         if [ $prf -eq 1 ]; then
                             for (( x=0; x<${#part[@]}; x++ ));
                             do
@@ -190,8 +166,12 @@ if [[ $usr == "root" ]]; then
                             done
                             read -p "Which one is the ROOTfs? [1-$(bc -l <<< "$x - 1")]: " pdec
                         fi
+                    #
+                    # # #
 
-                        # Shrink partition to ROOTfs size
+
+                    # # #
+                    # Shrink partition to ROOTfs size
                         if [ $prf -eq 1 ]; then
 
                             echo "Check filesystem..."
@@ -204,7 +184,6 @@ if [[ $usr == "root" ]]; then
                             rbc=${rbc##* }
                             bsz=${bsz##* }
                             ((psizadd=(${rbc}*${bsz})/1000))
-                            #read -p "$rbc * $bsz = $psizadd" dec
 
                             echo "Shrink partition size: ${part[$pdec]}..."
                             (echo d; echo $pdec; echo n; echo p; echo $pdec; echo ${starsec[$pdec]} ; echo +${psizadd}K; echo w) | fdisk /dev/${devices[$ddec]}
@@ -213,6 +192,9 @@ if [[ $usr == "root" ]]; then
                             e2fsck -f -y /dev/${part[$pdec]}
 
                         fi
+                    #
+                    # # #
+
                     fi
 
                     # Sichern der Partitionen
@@ -271,11 +253,6 @@ if [[ $usr == "root" ]]; then
                             fi
                         fi
 
-                        # Copy files
-                        if [ $prf -eq 1 ]; then
-                            mv ${pinfo} ${imgfol}/$NOW/
-                            mv ${pinfo}.orig ${imgfol}/$NOW/
-                        fi
                     fi
 
                     # Write comment 
