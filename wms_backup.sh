@@ -43,6 +43,7 @@ echo "---------------------"
 
     runID=$(uuidgen)
     tdir=/tmp/wms_backup/${runID}/
+    bLog=${tdir}backup.log
     mkdir -p $tdir
 #
 # # #
@@ -158,10 +159,14 @@ if [[ $usr == "root" ]]; then
                     # # #
                     # Show possible decisions
                         if [ $prf -eq 1 ]; then
+
                             for (( x=0; x<${#part[@]}; x++ ));
                             do
                                 if [ $x -ne 0 ]; then
-                                    echo "[$x] ${part[$x]} with Label: ${plabel[$x]} and a sector size of: ${psize[$x]}"
+                                    echo "[$x] ${part[$x]} with "
+                                    echo "      Label: ${plabel[$x]}"
+                                    echo "      and a sector size of: ${psize[$x]}"
+                                    echo ""
                                 fi
                             done
                             read -p "Which one is the ROOTfs? [1-$(bc -l <<< "$x - 1")]: " pdec
@@ -174,11 +179,14 @@ if [[ $usr == "root" ]]; then
                     # Shrink partition to ROOTfs size
                         if [ $prf -eq 1 ]; then
 
+                            echo ""
                             echo "Check filesystem..."
-                            e2fsck -f -y /dev/${part[$pdec]}
+                            e2fsck -f -y /dev/${part[$pdec]} >> $bLog
 
+                            echo ""
                             echo "Shrink filesystem ${part[$pdec]}... "
-                            resize2fs -M /dev/${part[$pdec]} 
+                            resize2fs -M /dev/${part[$pdec]}  >> $bLog
+
                             rbc=$(tune2fs -l /dev/${part[$pdec]} | grep "Block count" | tail -1)
                             bsz=$(tune2fs -l /dev/${part[$pdec]} | grep "Block size" | tail -1)
                             rbc=${rbc##* }
@@ -186,10 +194,10 @@ if [[ $usr == "root" ]]; then
                             ((psizadd=(${rbc}*${bsz})/1000))
 
                             echo "Shrink partition size: ${part[$pdec]}..."
-                            (echo d; echo $pdec; echo n; echo p; echo $pdec; echo ${starsec[$pdec]} ; echo +${psizadd}K; echo w) | fdisk /dev/${devices[$ddec]}
+                            (echo d; echo $pdec; echo n; echo p; echo $pdec; echo ${starsec[$(bc -l <<< "${pdec} - 1")]} ; echo +${psizadd}K; echo w) | fdisk /dev/${devices[$ddec]}
 
                             echo "Check the filesystem again..."
-                            e2fsck -f -y /dev/${part[$pdec]}
+                            e2fsck -f -y /dev/${part[$pdec]} >> $bLog
 
                         fi
                     #
@@ -242,7 +250,7 @@ if [[ $usr == "root" ]]; then
                             echo "Resize filesystem to maximum..."
                             if [ $dbg -eq 0 ]; then 
 
-                                (echo d; echo $pdec; echo n; echo p; echo $pdec; echo ${starsec[$pdec]} ; echo ${psize[$pdec]}; echo w) | fdisk /dev/${devices[$ddec]}
+                                (echo d; echo $pdec; echo n; echo p; echo $pdec; echo ${starsec[$(bc -l <<< "${pdec} - 1")]} ; echo ${psize[$pdec]}; echo w) | fdisk /dev/${devices[$ddec]}
                                 resize2fs /dev/${part[$pdec]} 
                             fi
                             echo "Check the filesystem..."
