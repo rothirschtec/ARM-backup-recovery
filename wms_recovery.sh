@@ -17,7 +17,7 @@ if [ $dbg -eq 0 ]; then
 fi
 
 check_dependencies() {
-    dep=("pv" "util-linux" "gzip" "parted")
+    dep=("pv" "util-linux" "gzip" "parted" "kpartx")
 
     for x in "${dep[@]}"; do
         dpkg-query -W $x &> /dev/null
@@ -264,7 +264,6 @@ if [[ $usr == "root" ]]; then
                                         else
                                             (echo d; echo $x; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
                                         fi
-                                        partprobe /dev/${device[$ddec]} 
                                     else
                                         if [ $x -eq 1 ]; then
                                             (echo d; echo w) | fdisk /dev/${device[$ddec]}
@@ -292,6 +291,8 @@ if [[ $usr == "root" ]]; then
                                     fi
                                 done
                             fi
+                            kpartx -u /dev/${device[$ddec]} 
+                            exit 0
 
                             # Suche der Partitionen und deren Größen im Format Byte
                             if [ $prf -eq 1 ]; then
