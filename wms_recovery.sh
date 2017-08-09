@@ -166,7 +166,7 @@ if [[ $usr == "root" ]]; then
 
                             echo "Entpacke gzip Archiv und ermitteln der Größe..."
                             i=0
-                            for x in tmp/*
+                            for x in tmp/p[0-9]*.gz
                             do
                                 echo -n "$x..."
                                 gunzip $x
@@ -271,7 +271,6 @@ if [[ $usr == "root" ]]; then
                                         else
                                             (echo d; echo $x; echo w) | fdisk /dev/${device[$ddec]}
                                         fi
-                                        partprobe /dev/${device[$ddec]}
                                     fi
                                 done
 
@@ -317,7 +316,7 @@ if [[ $usr == "root" ]]; then
                                 echo "!! Bitte warten Sie auch wenn der Vorgang 100% erreicht hat... !!"
                                 echo ""
                                 i=1
-                                for x in tmp/*
+                                for x in tmp/p[0-9]*
                                 do
                                     pv -tpreb $x | dd of=/dev/${part[$i]} bs=4M conv=notrunc,noerror
 
