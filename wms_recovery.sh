@@ -292,7 +292,6 @@ if [[ $usr == "root" ]]; then
                                 done
                             fi
                             kpartx -u /dev/${device[$ddec]} 
-                            exit 0
 
                             # Suche der Partitionen und deren Größen im Format Byte
                             if [ $prf -eq 1 ]; then
