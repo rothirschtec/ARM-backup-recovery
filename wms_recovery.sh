@@ -2,8 +2,8 @@
 
 echo "wms-one Recovery tool"
 echo "Author: René Zingerle"
-echo "Date: 08.08.2015"
-echo "Version: 0.09 [BETA]"
+echo "Date: 10.08.2015"
+echo "Version: 0.10 [BETA]"
 echo "Infos: http://wmsblog.rothirsch-tec.at/wmsone_backup/index.html"
 echo "---------------------"
 
@@ -145,8 +145,6 @@ if [[ $usr == "root" ]]; then
                     if [ $i -ne 0 ]; then
                         device[$i]=$p
                         echo "[$i] ${device[$i]}"
-                    else
-                        part[$i]="Disk Array"
                     fi
                     ((i++))
                 done < <(lsblk -d -o NAME)
@@ -173,11 +171,12 @@ if [[ $usr == "root" ]]; then
                                 calc=$(ls -s ${x%.*} | awk '{ print $1 }')
                                 #calc=$(echo "scale=0; ($calc/100 * 110)" | bc)
                                 size[$i]="+${calc}K"
+                                echo "here"
                                 echo ${size[$i]}
                                 (( i++ ))
                             done
                             (( i-- ))
-                
+
                             # Vergrößern eines Datenträgers
                             while [[ $sidc != "y"  ]] && [[ $sidc != "n" ]] 
                             do
@@ -207,108 +206,98 @@ if [[ $usr == "root" ]]; then
                                 fi
                             fi
 
+                        # # #
+                        # Entfernen der bestehenden Partitionen am Datenträger
+
                             # Suche der Partitionen und deren Größen im Format Byte
                             if [ $prf -eq 1 ]; then
                                 i=0             # Zähler
+                                j=0
                                 while read p
                                 do
-                                    if [[ $p == *${device[$ddec]}* ]]; then
+                                    if  [[ $p == *"${device[$ddec]}"* ]]; then
                                         if [ $i -ne 0 ]; then
-                                            part[$i]=$p
-                                            j=0
-                                        else
-                                            part[$i]="Part Array"
+                                            part[$j]=$p
+                                            echo $p
+                                            ((j++))
                                         fi
                                         ((i++))
                                     fi
                                 done < <(lsblk -l -o NAME)
                             fi
+                            part=($(printf "%s\n" "${part[@]}" | sort -u))
+                            echo ${part[@]}
 
-                            if [ $prf -eq 1 ]; then
-                            # Entferne den freien Speicher auf der ausgewählten Partition und entferne es
-                                echo "Prüfe ob das Dateisystem ${part[$pdec]} einhängt/gemountet ist."
-                                for (( x=0; x<${#part[@]}; x++ ));
-                                do
-                                    if [ $x -ne 0 ]; then
-                                        if mountpoint -q /dev/${part[$x]}; then
+                            if [[ ${part[@]} == "" ]]; then
+
+                                echo "Keine Partitionen erkannt."
+
+                            else
+
+                                if [ $prf -eq 1 ]; then
+                                # Entferne den freien Speicher auf der ausgewählten Partition und entferne es
+
+                                    echo ""
+                                    echo "Prüfe ob das Dateisystem ${part[$pdec]} einhängt/gemountet ist."
+                                    for (( x=0; x<${#part[@]}; x++ ));
+                                    do
+                                        echo ""
+                                        if mountpoint -q /dev/${part[$x]} &> /dev/null; then
                                             echo "${part[$x]} ist eingehängt. Entferne..."
-                                            if [ $dbg -eq 0 ]; then 
-                                                umount /dev/${part[$x]} &> /dev/null
-                                            else
-                                                umount /dev/${part[$x]}
-                                            fi
-                                        elif mount -l | grep /dev/${part[$x]}; then
+                                            umount /dev/${part[$x]} &> /dev/null
+
+                                        elif mount -l | grep /dev/${part[$x]} &> /dev/null; then
                                             echo "${part[$x]} ist eingehängt. Entferne..."
-                                            if [ $dbg -eq 0 ]; then 
-                                                umount /dev/${part[$x]} &> /dev/null
-                                            else
-                                                umount /dev/${part[$x]}
-                                            fi
+                                            umount /dev/${part[$x]} &> /dev/null
+
                                         else
                                             echo "${part[$x]} ist nicht eingehängt. Fahre fort..."
                                         fi
-                                    fi
-                                done
-                            fi
+                                    done
+                                fi
 
-                            # Löschen der bestehenden Partition
-                            if [ $prf -eq 1 ]; then
-                                echo "Lösche alle Partition auf dem Datenträger ${device[$ddec]} ..."
-                                #(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
+                                # Löschen der bestehenden Partition
+                                if [ $prf -eq 1 ]; then
 
-                                for (( x=(${#part[@]} - 1);  x > 0; x-- )); do
-                                    echo "Delete Partition: ${part[$x]}"
-                                    if [ $dbg -eq 0 ]; then 
-                                        if [ $x -eq 1 ]; then
-                                            (echo d; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
-                                        else
+                                    echo ""
+                                    echo "Lösche alle Partition auf dem Datenträger ${device[$ddec]} ..."
+                                    #(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
+
+                                    for (( x=(${#part[@]});  x > 0; x-- )); do
+                                        echo "Delete Partition: ${part[$x]}"
+
+                                        #if [ $x -eq 1 ]; then
+                                        #    (echo d; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
+                                        #else
                                             (echo d; echo $x; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
-                                        fi
-                                    else
-                                        if [ $x -eq 1 ]; then
-                                            (echo d; echo w) | fdisk /dev/${device[$ddec]}
-                                        else
-                                            (echo d; echo $x; echo w) | fdisk /dev/${device[$ddec]}
-                                        fi
-                                    fi
-                                done
-
-                                echo ""
-                                echo "------------"
-                                echo "Erzeuge partitonstabelle"
-                                parted -s /dev/${device[$ddec]} mklabel msdos
+                                        #fi
+                                    done
+                                fi
                             fi
+                        #
+                        # # #
+
+                        partprobe &> /dev/null
+
+                        # # #
+                        # Erstellen der Partitionen
 
                             # Erstellen der Partitionen 
                             if [ $prf -eq 1 ]; then
                                 echo "Erstelle Partitionen..."
                                 for (( x=0;  x < ${#size[@]}; x++ )); do
                                     echo "Partition $x > Size:${size[$x]}"
-                                    if [ $dbg -eq 0 ]; then 
-                                        ( echo n; echo p; echo $(( x + 1 )); echo ; echo ${size[$x]}; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
-                                    else
-                                        ( echo n; echo p; echo $(( x + 1 )); echo ; echo ${size[$x]}; echo w) | fdisk /dev/${device[$ddec]}
-                                    fi
+                                    pnumber=$(bc -l <<< "$x + 1")
+                                    echo /dev/${device[$ddec]}
+                                    echo ${size[$x]}
+                                    ( echo n; echo p; echo $pnumber; echo ; echo ${size[$x]}; echo w) | fdisk /dev/${device[$ddec]} #&> /dev/null
                                 done
                             fi
-                            kpartx -u /dev/${device[$ddec]} 
+                        #
+                        # # #
 
-                            # Suche der Partitionen und deren Größen im Format Byte
-                            if [ $prf -eq 1 ]; then
-                                i=0             # Zähler
-                                while read p
-                                do
-                                    if [[ $p == *${device[$ddec]}* ]]; then
-                                        if [ $i -ne 0 ]; then
-                                            part[$i]=$p
-                                            j=0
-                                        else
-                                            part[$i]="Part Array"
-                                        fi
-                                        ((i++))
-                                    fi
-                                done < <(lsblk -l -o NAME)
-                            fi
+                        partprobe &> /dev/null
+
                             # Wiederherstellen der Image Dateien
                             if [ $prf -eq 1 ]; then
                                 echo "Erstelle Partitionen..."
@@ -318,37 +307,21 @@ if [[ $usr == "root" ]]; then
                                 i=1
                                 for x in tmp/p[0-9]*
                                 do
-                                    pv -tpreb $x | dd of=/dev/${part[$i]} bs=4M conv=notrunc,noerror
+                                    echo "Write to /dev/${device[$ddec]}p$i..."
+                                    pv -tpreb $x | dd of=/dev/${device[$ddec]}p$i bs=4M conv=notrunc,noerror
 
                                     if [ $i -gt 1 ]; then
                                         echo "Überprüfe das Dateisystem..."
-                                        if [ $dbg -eq 0 ]; then 
-                                            e2fsck -f /dev/${part[$i]} &> /dev/null
-                                        else
-                                            e2fsck -f /dev/${part[$i]}
-                                        fi
+                                            e2fsck -f /dev/${device[$ddec]}p$i &> /dev/null
+
                                         echo "Vergrößere Dateisystem auf maximum..."
-                                        if [ $dbg -eq 0 ]; then 
-                                            resize2fs -p /dev/${part[$i]} &> /dev/null
-                                        else
-                                            resize2fs -p /dev/${part[$i]}
-                                        fi
+                                            resize2fs -p /dev/${device[$ddec]}p$i &> /dev/null
+
                                         echo "Überprüfe das Dateisystem..."
-                                        if [ $dbg -eq 0 ]; then 
-                                            e2fsck -f /dev/${part[$i]} &> /dev/null
-                                        else
-                                            e2fsck -f /dev/${part[$i]}
-                                        fi
+                                            e2fsck -f /dev/${device[$ddec]}p$i &> /dev/null
                                     fi
                                     (( i++ ))
                                 done
-                            fi
-
-                            echo "Setze das Boot Flag"
-                            if [ $dbg -eq 0 ]; then 
-                                parted /dev/${device[$ddec]} set 1 lba on &> /dev/null
-                            else
-                                parted /dev/${device[$ddec]} set 1 lba on
                             fi
 
                             echo ""
