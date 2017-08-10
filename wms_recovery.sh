@@ -177,7 +177,6 @@ if [[ $usr == "root" ]]; then
                             do
                                 read -p "Soll die letzte Partition erweitert werden? (y/n): " sidc
                                 if [[ $sidc == "y" ]]; then
-                                    size[$i]=""
                                     echo "Letzte Partition wird erweitert..."
                                 elif [[ $sidc == "n" ]]; then
                                     echo "Fahre fort..."
@@ -185,19 +184,18 @@ if [[ $usr == "root" ]]; then
                                     read -p "Auswahl nicht möglich!... " sidc
                                 fi  
                             done
-                        fi
 
-                        read -p "Der komplette Datenträger ${device[$ddec]} wird überschrieben (z=ZEROS) [y/n/z]: " dec
-                        if [[ $dec == "y" ]] || [[ $dec == "z" ]]; then
+                            read -p "Der komplette Datenträger ${device[$ddec]} wird überschrieben (z=ZEROS) [y/n/z]: " dec
+                            if [[ $dec == "y" ]] || [[ $dec == "z" ]]; then
 
-                            if [[ $dec == "z" ]]; then
-                                read -p "Die Lebensdauer eine SD Karte ist von ihren Schreibzyklen abhängig. Trotzdem fortfahren? (y/n): " dec
-                                if [[ $dec == "y" ]]; then
-                                    echo "Überschreibe den kompletten Datenträger ${device[$ddec]} mit /dev/null ..."
-                                    pv -tpreb /dev/zero | dd of=/dev/${device[$ddec]} bs=32M conv=noerror
+                                if [[ $dec == "z" ]]; then
+                                    read -p "Die Lebensdauer eine SD Karte ist von ihren Schreibzyklen abhängig. Trotzdem fortfahren? (y/n): " dec
+                                    if [[ $dec == "y" ]]; then
+                                        echo "Überschreibe den kompletten Datenträger ${device[$ddec]} mit /dev/null ..."
+                                        pv -tpreb /dev/zero | dd of=/dev/${device[$ddec]} bs=32M conv=noerror
+                                    fi
                                 fi
                             fi
-                        fi
 
                         # # #
                         # Entfernen der bestehenden Partitionen am Datenträger
@@ -275,15 +273,37 @@ if [[ $usr == "root" ]]; then
                         # # #
                         # Erstellen der Partitionen
 
+                            # Finde letzte Partition
+                            partAmount=0
+                            if [ $prf -eq 1 ]; then
+                                for (( x=0;  x < ${#opsize[@]}; x++ )); do
+                                    partType=$(awk -F';' '{print $1;}' <<<${opsize[$x]})
+                                    if [[ $partType != "Free" ]]; then
+                                        (( partAmount++ ))
+                                    fi
+                                done
+                            fi
+                            
                             # Erstellen der Partitionen 
                             if [ $prf -eq 1 ]; then
                                 echo "Erstelle Partitionen..."
-                                for (( x=0;  x < ${#size[@]}; x++ )); do
-                                    echo "Partition $x > Size:${size[$x]}"
-                                    pnumber=$(bc -l <<< "$x + 1")
-                                    echo /dev/${device[$ddec]}
-                                    echo ${size[$x]}
-                                    ( echo n; echo p; echo $pnumber; echo ; echo ${size[$x]}; echo w) | fdisk /dev/${device[$ddec]} #&> /dev/null
+                                pnumber=1
+                                for (( x=0;  x < ${#opsize[@]}; x++ )); do
+
+                                    partType=$(awk -F';' '{print $1;}' <<<${opsize[$x]})
+                                    if [[ $partType != "Free" ]]; then
+                                  
+                                        ssec=$(awk -F';' '{print $2;}' <<<${opsize[$x]})
+                                        ssec=$(sed 's/s//g' <<< $ssec)
+                                        if [ $pnumber -eq $partAmount ] && [[ $sidc == "y" ]]; then
+                                            ssiz=""
+                                        else
+                                            ssiz=$(awk -F';' '{print $3;}' <<<${opsize[$x]})
+                                            ssiz=$(sed 's/s//g' <<< $ssiz)
+                                        fi
+                                        ( echo n; echo p; echo $pnumber; echo $ssec; echo $ssiz; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
+                                        (( pnumber++ ))
+                                    fi
                                 done
                             fi
                         #
