@@ -39,16 +39,6 @@ if [[ $usr == "root" ]]; then
     while [ $exit -eq 0 ]; do
         if [[ $plugged == "mount" ]]; then
             
-            # Warte 5 Sekunde
-            wait=5
-            echo -n "Warte für 5 Sekunden ["
-            for ((x=0; x<$wait; x++))
-            do
-                echo -n "."
-                sleep 1
-            done
-            echo "]"
-
             if check_dependencies; then
                 # Wähle Backup
                 if [ $prf -eq 1 ]; then
