@@ -338,6 +338,7 @@ if [[ $usr == "root" ]]; then
                             fi
 
                             echo ""
+                            partprobe &> /dev/null
                             echo "Image wurde wiederhergestellt."
                             for x in 1 2 3; do sleep 0.5; echo -ne "\a"; done
 
