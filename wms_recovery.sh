@@ -3,7 +3,7 @@
 echo "wms-one Recovery tool"
 echo "Author: René Zingerle"
 echo "Date: 10.08.2015"
-echo "Version: 0.10 [BETA]"
+echo "Version: 0.11 [BETA]"
 echo "Infos: http://wmsblog.rothirsch-tec.at/wmsone_backup/index.html"
 echo "---------------------"
 
@@ -254,14 +254,15 @@ if [[ $usr == "root" ]]; then
                                     echo "Lösche alle Partition auf dem Datenträger ${device[$ddec]} ..."
                                     #(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
 
-                                    for (( x=(${#part[@]});  x > 0; x-- )); do
+                                    for (( x=$(bc -l <<< "${#part[@]} - 1");  x >= 0; x-- )); do
+                                    do
                                         echo "Delete Partition: ${part[$x]}"
 
-                                        #if [ $x -eq 1 ]; then
-                                        #    (echo d; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
-                                        #else
+                                        if [ $x -eq 1 ]; then
+                                            (echo d; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
+                                        else
                                             (echo d; echo $x; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
-                                        #fi
+                                        fi
                                     done
                                 fi
                             fi
