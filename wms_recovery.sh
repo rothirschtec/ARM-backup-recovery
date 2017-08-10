@@ -187,19 +187,17 @@ if [[ $usr == "root" ]]; then
                             done
                         fi
 
-                        read -p "Der komplette Datenträger ${device[$ddec]} wird überschrieben (y/n): " dec
-                        if [[ $dec == "y" ]]; then
+                        read -p "Der komplette Datenträger ${device[$ddec]} wird überschrieben (z=ZEROS) [y/n/z]: " dec
+                        if [[ $dec == "y" ]] || [[ $dec == "z" ]]; then
 
-                            if [ $prf -eq 1 ]; then
-                                read -p "Kompletten Datenträger mit Nullen überschreiben? (y/n): " dec
+                            if [[ $dec == "z" ]]; then
+                                read -p "Die Lebensdauer eine SD Karte ist von ihren Schreibzyklen abhängig. Trotzdem fortfahren? (y/n): " dec
                                 if [[ $dec == "y" ]]; then
-                                    read -p "Die Lebensdauer eine SD Karte ist von ihren Schreibzyklen abhängig. Trotzdem fortfahren? (y/n): " dec
-                                    if [[ $dec == "y" ]]; then
-                                        echo "Überschreibe den kompletten Datenträger ${device[$ddec]} mit /dev/null ..."
-                                        pv -tpreb /dev/zero | dd of=/dev/${device[$ddec]} bs=32M conv=noerror
-                                    fi
+                                    echo "Überschreibe den kompletten Datenträger ${device[$ddec]} mit /dev/null ..."
+                                    pv -tpreb /dev/zero | dd of=/dev/${device[$ddec]} bs=32M conv=noerror
                                 fi
                             fi
+                        fi
 
                         # # #
                         # Entfernen der bestehenden Partitionen am Datenträger
