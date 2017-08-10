@@ -124,9 +124,6 @@ if [[ $usr == "root" ]]; then
                     fi
                 fi
 
-                echo ${opsize[@]}
-                exit 0
-
                 # Starte den Wiederherstellungsprozess
                 if [ $prf -eq 1 ]; then
                     echo ""
