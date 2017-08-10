@@ -17,7 +17,7 @@ if [ $dbg -eq 0 ]; then
 fi
 
 check_dependencies() {
-    dep=("pv" "util-linux" "gzip" "parted" "kpartx")
+    dep=("pv" "util-linux" "gzip" "parted")
 
     for x in "${dep[@]}"; do
         dpkg-query -W $x &> /dev/null
@@ -117,7 +117,15 @@ if [[ $usr == "root" ]]; then
                         fi
                     fi
                         
+                    if [ -f  ${imgfol}/${fol[$bdec]}/pinfo.sh ]; then
+                        source ${imgfol}/${fol[$bdec]}/pinfo.sh
+                    else
+                        echo "Veraltetes Backup wird nicht mehr unterstützt"
+                    fi
                 fi
+
+                echo ${opsize[@]}
+                exit 0
 
                 # Starte den Wiederherstellungsprozess
                 if [ $prf -eq 1 ]; then
