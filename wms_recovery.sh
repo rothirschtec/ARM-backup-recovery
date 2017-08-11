@@ -254,15 +254,14 @@ if [[ $usr == "root" ]]; then
                                     echo "Lösche alle Partition auf dem Datenträger ${device[$ddec]} ..."
                                     #(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
 
-                                    for (( x=$(bc -l <<< "${#part[@]} - 1");  x >= 0; x-- )); do
-                                    do
+                                    for (( x=(${#part[@]});  x > 0; x-- )); do
                                         echo "Delete Partition: ${part[$x]}"
 
-                                        if [ $x -eq 1 ]; then
-                                            (echo d; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
-                                        else
+                                        #if [ $x -eq 1 ]; then
+                                        #    (echo d; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
+                                        #else
                                             (echo d; echo $x; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
-                                        fi
+                                        #fi
                                     done
                                 fi
                             fi
