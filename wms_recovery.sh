@@ -321,6 +321,8 @@ if [[ $usr == "root" ]]; then
 
                                 # MBR wiederherstellen
                                 pv -tpreb tmp/mbr_wms.img.gz | dd of=/dev/${device[$ddec]} bs=4M conv=notrunc,noerror && sync
+                                partprobe &> /dev/null
+
                                 for x in tmp/p[0-9]*
                                 do
                                     echo "Write to /dev/${device[$ddec]}p$i..."
@@ -336,6 +338,8 @@ if [[ $usr == "root" ]]; then
                                         echo "Überprüfe das Dateisystem..."
                                             e2fsck -f /dev/${device[$ddec]}p$i &> /dev/null
                                     fi
+
+                                    partprobe &> /dev/null
                                     (( i++ ))
                                 done
                             fi
