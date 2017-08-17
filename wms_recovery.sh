@@ -302,10 +302,11 @@ if [[ $usr == "root" ]]; then
                                             ssiz=$(sed 's/s//g' <<< $ssiz)
                                         fi
                                         
+                                        ( echo n; echo p; echo $pnumber; echo $ssec; echo $ssiz; echo w) | fdisk /dev/${device[$ddec]} #&> /dev/null
+
                                         if [ $pnumber -eq 1 ]; then
                                             ( echo t; echo $pnumber; echo c; echo w) | fdisk /dev/${device[$ddec]} #&> /dev/null
                                         fi
-                                        ( echo n; echo p; echo $pnumber; echo $ssec; echo $ssiz; echo w) | fdisk /dev/${device[$ddec]} #&> /dev/null
                                         (( pnumber++ ))
                                     fi
                                 done
