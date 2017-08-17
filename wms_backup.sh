@@ -250,9 +250,7 @@ if [[ $usr == "root" ]]; then
    
                         echo ""
                         echo "MBR Backup" 
-                        mbr=$(echo ${opsize[0]} |awk 'BEGIN { FS=";"; OFS=";";} {print $4}')
-                        mbr=$(sed 's/s//g' <<< $mbr)
-                        pv -tpreb /dev/${devices[$ddec]} | dd bs=$mbr count=1 | gzip > ${imgfol}/$NOW/mbr_wms.img.gz && sync
+                        pv -tpreb /dev/${devices[$ddec]} | dd bs=1M count=1 | gzip > ${imgfol}/$NOW/mbr_wms.bin.gz && sync
 
                         if [[ $shrink == "2" ]]; then
                             echo "Partition backup..."
