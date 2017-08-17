@@ -192,7 +192,7 @@ if [[ $usr == "root" ]]; then
                                     read -p "Die Lebensdauer eine SD Karte ist von ihren Schreibzyklen abhängig. Trotzdem fortfahren? (y/n): " dec
                                     if [[ $dec == "y" ]]; then
                                         echo "Überschreibe den kompletten Datenträger ${device[$ddec]} mit /dev/null ..."
-                                        pv -tpreb /dev/zero | dd of=/dev/${device[$ddec]} bs=32M conv=noerror
+                                        pv -tpreb /dev/zero | dd of=/dev/${device[$ddec]} bs=32M conv=noerror && sync
                                     fi
                                 fi
                             fi
@@ -318,10 +318,10 @@ if [[ $usr == "root" ]]; then
                                 echo "!! Bitte warten Sie auch wenn der Vorgang 100% erreicht hat... !!"
                                 echo ""
                                 i=1
-                                for x in tmp/p[0-9]*
+                                for x in tmp/mbr_wms.img.gz tmp/p[0-9]*
                                 do
                                     echo "Write to /dev/${device[$ddec]}p$i..."
-                                    pv -tpreb $x | dd of=/dev/${device[$ddec]}p$i bs=4M conv=notrunc,noerror
+                                    pv -tpreb $x | dd of=/dev/${device[$ddec]}p$i bs=4M conv=notrunc,noerror && sync
 
                                     if [ $i -gt 1 ]; then
                                         echo "Überprüfe das Dateisystem..."
@@ -351,7 +351,7 @@ if [[ $usr == "root" ]]; then
                     if [[ $state == "full" ]]; then
                         echo "Vollständiges Backup erkannt. Überschreibe Datenträger!"
                         echo "!! Sollten der Recovery-Prozess 100% erreicht haben, der Skript aber nicht mehr reagieren, dann muss der Datenträger entfernt werden !!"
-                        gzip -dc ${imgfol}/${fol[$bdec]}/*.gz | pv -tpreb | dd bs=4M of=/dev/${device[$ddec]}
+                        gzip -dc ${imgfol}/${fol[$bdec]}/*.gz | pv -tpreb | dd bs=4M of=/dev/${device[$ddec]} && sync
                     fi
 
                 # Beende Script wenn $prf 0
