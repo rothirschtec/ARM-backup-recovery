@@ -257,20 +257,20 @@ if [[ $usr == "root" ]]; then
                                 done
                             fi
     
-                            # Bootloader wiederherstellen
+                            # MBR und Partitionstabelle wiederherstellen
                             echo ""
-                            echo "Bootloader wiederherstellen"
-                            gzip -dc ${imgfol}/${fol[$bdec]}/mbr_wms.bin.gz | dd of=/dev/${device[$ddec]} bs=1M count=1 &> /dev/null
-                            
-                            # Erstellen der Partitionen 
-                            if [ $prf -eq 0 ]; then
-                                echo "Erstelle Partitionen..."
+                            echo "MBR und Partitionstabelle wiederherstellen"
+                            gzip -dc ${imgfol}/${fol[$bdec]}/mbr_wms.bin.gz | pv -tpreb | dd of=/dev/${device[$ddec]} bs=1M count=1
+                            echo ""
+                            parted -s /dev/${device[$ddec]} mklabel msdos
+
+                            if [ $prf -eq 1 ]; then
                                 pnumber=1
                                 for (( x=0;  x < ${#opsize[@]}; x++ )); do
 
                                     partType=$(awk -F';' '{print $1;}' <<<${opsize[$x]})
                                     if [[ $partType != "Free" ]]; then
-                                  
+
                                         ssec=$(awk -F';' '{print $2;}' <<<${opsize[$x]})
                                         ssec=$(sed 's/s//g' <<< $ssec)
                                         if [ $pnumber -eq $partAmount ] && [[ $sidc == "y" ]]; then
@@ -279,21 +279,19 @@ if [[ $usr == "root" ]]; then
                                             ssiz=$(awk -F';' '{print $3;}' <<<${opsize[$x]})
                                             ssiz=$(sed 's/s//g' <<< $ssiz)
                                         fi
-
                                         ( echo n; echo p; echo $pnumber; echo $ssec; echo $ssiz; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
-                        
                                         (( pnumber++ ))
                                     fi
                                 done
                             fi
-                            partprobe &> /dev/null
+
+
                         #
                         # # #
 
                         # # #
                         # Wiederherstellen der Image Dateien
                             if [ $prf -eq 1 ]; then
-                                echo "Erstelle Partitionen..."
                                 echo "!! Dieser Vorgang kann einige Zeit in Anspruch nehmen...  !!"
                                 echo "!! Bitte warten Sie auch wenn der Vorgang 100% erreicht hat... !!"
                                 echo ""
@@ -303,8 +301,8 @@ if [[ $usr == "root" ]]; then
                                 do
                                     echo "Write, $x to /dev/${device[$ddec]}p$i..."
                             
-                                    gzip -dc $x | dd of=/dev/${device[$ddec]}p$i iflag=nocache oflag=nocache,dsync bs=4M
-                                    #gzip -dc $x | dd of=/dev/${device[$ddec]}p$i  bs=4M
+                                    gzip -dc $x | pv -tpreb | dd of=/dev/${device[$ddec]}p$i  bs=4M
+                                    sync
 
                                     if [ $i -gt 1 ]; then
                                         echo "Überprüfe das Dateisystem..."
