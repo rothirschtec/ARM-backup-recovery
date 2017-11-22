@@ -103,7 +103,16 @@ if [[ $usr == "root" ]]; then
                             ((i++))
                         done < <(lsblk -d -o NAME)
                         read -p "Choose your backup device [0-9]: " ddec
-                        partprobe /dev/${devices[$ddec]} 
+
+                        ls -R ${imgfol}/ | grep ":$" | sed -e 's/:$//' -e 's/[^-][^\/]*\// /g' -e 's/^/ /'
+                        read -p "Name of the backup directory: " bak_fol
+                        NOW=${bak_fol}/$(date +"%Y_%m_%dat%H_%M_%S")
+                        mkdir -p ${imgfol}/$NOW
+
+                        echo ""
+                        echo "MBR Backup" 
+                        dd if=/dev/${devices[$ddec]} of=${imgfol}/$NOW/mbr.bin bs=1M count=1
+
                     fi
     
 
@@ -235,22 +244,12 @@ if [[ $usr == "root" ]]; then
                             e2fsck -f -y /dev/${part[$pdec]} >> $bLog
 
                         fi
-                    #
-                    # # #
+                    # # # #
 
                     fi
 
                     # Sichern der Partitionen
                     if [ $prf -eq 1 ]; then
-
-                        ls -R ${imgfol}/ | grep ":$" | sed -e 's/:$//' -e 's/[^-][^\/]*\// /g' -e 's/^/ /'
-                        read -p "Name of the backup directory: " bak_fol
-                        NOW=${bak_fol}/$(date +"%Y_%m_%dat%H_%M_%S")
-                        mkdir -p ${imgfol}/$NOW
-   
-                        echo ""
-                        echo "MBR Backup" 
-                        pv -tpreb /dev/${devices[$ddec]} | dd bs=1M count=1 | gzip > ${imgfol}/$NOW/mbr_wms.bin.gz && sync
 
                         if [[ $shrink == "2" ]]; then
                             echo "Partition backup..."
@@ -260,14 +259,14 @@ if [[ $usr == "root" ]]; then
                                     echo ""
                                     echo "Backup ${part[$x]}..."
                                     echo "Please be patient!..."
-                                    pv -tpreb /dev/${part[$x]} | dd bs=4M | gzip > ${imgfol}/$NOW/p${x}_wms.img.gz && sync
+                                    pv -tpreb /dev/${part[$x]} | dd bs=4M | gzip -c -9 > ${imgfol}/$NOW/p${x}_wms.img.gz && sync
                                 fi
                             done
                             echo "Partition" > ${imgfol}/$NOW/state.txt
                         elif [[ $shrink == "1" ]]; then
                             echo "Backup the complete filesystem..."
                             echo "Please be patient..."
-                            pv -tpreb /dev/${devices[$ddec]} | dd bs=4M | gzip > ${imgfol}/$NOW/complete_wms.img.gz && sync
+                            pv -tpreb /dev/${devices[$ddec]} | dd bs=4M | gzip -c -9 > ${imgfol}/$NOW/complete_wms.img.gz && sync
                             echo "Complete" > ${imgfol}/$NOW/state.txt
                         fi
                         echo ""
@@ -276,7 +275,7 @@ if [[ $usr == "root" ]]; then
 
                     if [[ $shrink == "2" ]]; then
                         # Resize des ROOTfs
-                        if [ $prf -eq 1 ]; then
+                        if [ $prf -eq 0 ]; then
                             echo "Resize partition /dev/${part[$pdec]} to maximum"
                             echo "Check the filesystem..."
                             if [ $dbg -eq 0 ]; then 
