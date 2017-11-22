@@ -155,22 +155,8 @@ if [[ $usr == "root" ]]; then
                         if [ $prf -eq 1 ]; then
                             echo ""
                             echo "Kopiere Ordner"
-                            cp -a ${imgfol}/${fol[$bdec]}/*.gz tmp/
+                            #cp -a ${imgfol}/${fol[$bdec]}/*.gz tmp/
 
-                            echo "Entpacke gzip Archiv und ermitteln der Größe..."
-                            i=0
-                            for x in tmp/p[0-9]*.gz
-                            do
-                                echo -n "$x..."
-                                gunzip $x
-                                calc=$(ls -s ${x%.*} | awk '{ print $1 }')
-                                #calc=$(echo "scale=0; ($calc/100 * 110)" | bc)
-                                size[$i]="+${calc}K"
-                                echo "here"
-                                echo ${size[$i]}
-                                (( i++ ))
-                            done
-                            (( i-- ))
 
                             # Vergrößern eines Datenträgers
                             while [[ $sidc != "y"  ]] && [[ $sidc != "n" ]] 
@@ -187,8 +173,7 @@ if [[ $usr == "root" ]]; then
 
                             read -p "Der komplette Datenträger ${device[$ddec]} wird überschrieben (z=ZEROS) [y/n/z]: " dec
                             if [[ $dec == "y" ]] || [[ $dec == "z" ]]; then
-
-                                if [[ $dec == "z" ]]; then
+if [[ $dec == "z" ]]; then
                                     read -p "Die Lebensdauer eine SD Karte ist von ihren Schreibzyklen abhängig. Trotzdem fortfahren? (y/n): " dec
                                     if [[ $dec == "y" ]]; then
                                         echo "Überschreibe den kompletten Datenträger ${device[$ddec]} mit /dev/null ..."
@@ -209,7 +194,6 @@ if [[ $usr == "root" ]]; then
                                     if  [[ $p == *"${device[$ddec]}"* ]]; then
                                         if [ $i -ne 0 ]; then
                                             part[$j]=$p
-                                            echo $p
                                             ((j++))
                                         fi
                                         ((i++))
@@ -217,8 +201,9 @@ if [[ $usr == "root" ]]; then
                                 done < <(lsblk -l -o NAME)
                             fi
                             part=($(printf "%s\n" "${part[@]}" | sort -u))
-                            echo ${part[@]}
 
+                        # # #
+                        # Unmount der bestehenden Partition und löschen des MBR und Partitionstabellen
                             if [[ ${part[@]} == "" ]]; then
 
                                 echo "Keine Partitionen erkannt."
@@ -226,23 +211,21 @@ if [[ $usr == "root" ]]; then
                             else
 
                                 if [ $prf -eq 1 ]; then
-                                # Entferne den freien Speicher auf der ausgewählten Partition und entferne es
 
                                     echo ""
                                     echo "Prüfe ob das Dateisystem ${part[$pdec]} einhängt/gemountet ist."
                                     for (( x=0; x<${#part[@]}; x++ ));
                                     do
-                                        echo ""
                                         if mountpoint -q /dev/${part[$x]} &> /dev/null; then
+                                            echo ""
                                             echo "${part[$x]} ist eingehängt. Entferne..."
                                             umount /dev/${part[$x]} &> /dev/null
 
                                         elif mount -l | grep /dev/${part[$x]} &> /dev/null; then
+                                            echo ""
                                             echo "${part[$x]} ist eingehängt. Entferne..."
                                             umount /dev/${part[$x]} &> /dev/null
 
-                                        else
-                                            echo "${part[$x]} ist nicht eingehängt. Fahre fort..."
                                         fi
                                     done
                                 fi
@@ -251,24 +234,13 @@ if [[ $usr == "root" ]]; then
                                 if [ $prf -eq 1 ]; then
 
                                     echo ""
-                                    echo "Lösche alle Partition auf dem Datenträger ${device[$ddec]} ..."
-                                    #(echo o; echo n; echo p; echo 1; echo ; echo; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
+                                    echo "Delete MBR and partition table"
+                                    dd if=/dev/zero of=/dev/${device[$ddec]} bs=1M count=1 &> /dev/null 
 
-                                    for (( x=(${#part[@]} - 1);  x >= 0; x-- )); do
-                                        echo "Delete Partition: ${part[$x]}"
-
-                                        #if [ $x -eq 1 ]; then
-                                        #    (echo d; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
-                                        #else
-                                            (echo d; echo $x; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
-                                        #fi
-                                    done
                                 fi
                             fi
                         #
                         # # #
-
-                        partprobe &> /dev/null
 
                         # # #
                         # Erstellen der Partitionen
@@ -283,50 +255,69 @@ if [[ $usr == "root" ]]; then
                                     fi
                                 done
                             fi
-                            
-                            # Erstellen der Partitionen 
+    
                             if [ $prf -eq 1 ]; then
-                                echo "Erstelle Partitionen..."
-                                pnumber=1
-                                for (( x=0;  x < ${#opsize[@]}; x++ )); do
 
-                                    partType=$(awk -F';' '{print $1;}' <<<${opsize[$x]})
-                                    if [[ $partType != "Free" ]]; then
-                                  
-                                        ssec=$(awk -F';' '{print $2;}' <<<${opsize[$x]})
-                                        ssec=$(sed 's/s//g' <<< $ssec)
-                                        if [ $pnumber -eq $partAmount ] && [[ $sidc == "y" ]]; then
-                                            ssiz=""
-                                        else
-                                            ssiz=$(awk -F';' '{print $3;}' <<<${opsize[$x]})
-                                            ssiz=$(sed 's/s//g' <<< $ssiz)
+                                #echo ""
+                                #echo "MBR und Partitionstabelle wiederherstellen"
+                                #dd if=${imgfol}/${fol[$bdec]}/mbr.bin of=/dev/mmcblk0 bs=1M count=1
+
+                                pf=1
+                                if [ $pf -eq 1 ]; then
+
+                                    echo ""
+                                    parted -s /dev/${device[$ddec]} mklabel msdos
+
+                                    pnumber=1
+                                    for (( x=0;  x < ${#opsize[@]}; x++ )); do
+
+                                        partType=$(awk -F';' '{print $1;}' <<<${opsize[$x]})
+                                        if [[ $partType != "Free" ]]; then
+
+                                            ssec=$(awk -F';' '{print $2;}' <<<${opsize[$x]})
+                                            ssec=$(sed 's/s//g' <<< $ssec)
+
+                                            if [ $pnumber -eq $partAmount ] && [[ $sidc == "y" ]]; then
+                                                ssiz=""
+                                            else
+                                                ssiz=$(awk -F';' '{print $3;}' <<<${opsize[$x]})
+                                                ssiz=$(sed 's/s//g' <<< $ssiz)
+                                            fi
+
+
+                                            ( echo n; echo p; echo $pnumber; echo $ssec; echo $ssiz; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
+
+                                            if [[ $partType == "P1" ]]; then
+                                                # Create FAT32 LBA
+                                                echo '( echo t; echo 1; echo c; echo a; echo 1; echo w) | fdisk /dev/'${device[$ddec]}' &> /dev/null'
+                                            fi
+
+                                            (( pnumber++ ))
                                         fi
-                                        ( echo n; echo p; echo $pnumber; echo $ssec; echo $ssiz; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
-                                        (( pnumber++ ))
-                                    fi
-                                done
+                                    done
+                                fi
                             fi
+
+                            # ReRead sdCard so /dev/mmcblk0p2 will be recognized
+                            # Without this option a device called /dev/loop0 will be created
+                            partprobe
                         #
                         # # #
 
-                        partprobe &> /dev/null
-
-                            # Wiederherstellen der Image Dateien
+                        # # #
+                        # Wiederherstellen der Image Dateien
                             if [ $prf -eq 1 ]; then
-                                echo "Erstelle Partitionen..."
                                 echo "!! Dieser Vorgang kann einige Zeit in Anspruch nehmen...  !!"
                                 echo "!! Bitte warten Sie auch wenn der Vorgang 100% erreicht hat... !!"
                                 echo ""
                                 i=1
 
-                                # MBR wiederherstellen
-                                pv -tpreb tmp/mbr_wms.img.gz | dd of=/dev/${device[$ddec]} bs=4M conv=notrunc,noerror && sync
-                                partprobe &> /dev/null
-
-                                for x in tmp/p[0-9]*
+                                for x in  ${imgfol}/${fol[$bdec]}/p[0-9]*.gz
                                 do
-                                    echo "Write to /dev/${device[$ddec]}p$i..."
-                                    pv -tpreb $x | dd of=/dev/${device[$ddec]}p$i bs=4M conv=notrunc,noerror && sync
+                                    echo "Write, $x to /dev/${device[$ddec]}p$i..."
+                            
+                                    gzip -dc $x | pv -tpreb | dd of=/dev/${device[$ddec]}p$i  bs=4M
+                                    sync
 
                                     if [ $i -gt 1 ]; then
                                         echo "Überprüfe das Dateisystem..."
@@ -339,16 +330,11 @@ if [[ $usr == "root" ]]; then
                                             e2fsck -f /dev/${device[$ddec]}p$i &> /dev/null
                                     fi
 
-                                    partprobe &> /dev/null
                                     (( i++ ))
+                                    echo ""
                                 done
                             fi
 
-                            echo ""
-                            echo "Setze Boot Flag"
-                            parted /dev/${device[$ddec]} set 1 lba on &> /dev/null
-
-                            partprobe &> /dev/null
                             echo "Image wurde wiederhergestellt."
                             for x in 1 2 3; do sleep 0.5; echo -ne "\a"; done
 
