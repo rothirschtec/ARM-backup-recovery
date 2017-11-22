@@ -289,7 +289,7 @@ if [[ $dec == "z" ]]; then
 
                                             if [[ $partType == "P1" ]]; then
                                                 # Create FAT32 LBA
-                                                echo '( echo t; echo 1; echo c; echo a; echo 1; echo w) | fdisk /dev/'${device[$ddec]}' &> /dev/null'
+                                                ( echo t; echo 1; echo c; echo a; echo 1; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
                                             fi
 
                                             (( pnumber++ ))
