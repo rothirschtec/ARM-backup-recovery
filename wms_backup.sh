@@ -275,7 +275,7 @@ if [[ $usr == "root" ]]; then
 
                     if [[ $shrink == "2" ]]; then
                         # Resize des ROOTfs
-                        if [ $prf -eq 0 ]; then
+                        if [ $prf -eq 1 ]; then
                             echo "Resize partition /dev/${part[$pdec]} to maximum"
                             echo "Check the filesystem..."
                             if [ $dbg -eq 0 ]; then 
@@ -339,6 +339,7 @@ if [[ $usr == "root" ]]; then
                         done
 
                     if [[ $shrink == "2" ]]; then
+
                         echo ""
                         echo "Partition backup successfully ends..."
                     elif [[ $shrink == "1" ]]; then
