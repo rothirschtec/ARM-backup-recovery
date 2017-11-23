@@ -1,10 +1,10 @@
 #!/bin/bash 
 
-echo "#wms Backup tool"
+echo "wms Backup tool"
 echo "Author: René Zingerle"
-echo "Date: 08.08.2017"
-echo "Version: 0.11 [BETA]"
-echo "Info: http://http://wmsblog.rothirsch.tech/wms_backup/"
+echo "Date: 23.11.2017"
+echo "Version: 0.12 [BETA]"
+echo "Infos: https://blog.rothirsch.tech/wms_backup/"
 echo "---------------------"
 
 
@@ -262,12 +262,12 @@ if [[ $usr == "root" ]]; then
                                     pv -tpreb /dev/${part[$x]} | dd bs=4M | gzip -c -9 > ${imgfol}/$NOW/p${x}_wms.img.gz && sync
                                 fi
                             done
-                            echo "Partition" > ${imgfol}/$NOW/state.txt
+                            echo "Partition" > ${imgfol}/$NOW/type.txt
                         elif [[ $shrink == "1" ]]; then
                             echo "Backup the complete filesystem..."
                             echo "Please be patient..."
                             pv -tpreb /dev/${devices[$ddec]} | dd bs=4M | gzip -c -9 > ${imgfol}/$NOW/complete_wms.img.gz && sync
-                            echo "Complete" > ${imgfol}/$NOW/state.txt
+                            echo "Complete" > ${imgfol}/$NOW/type.txt
                         fi
                         echo ""
                     fi
