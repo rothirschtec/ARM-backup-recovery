@@ -1,5 +1,6 @@
 #!/bin/bash 
 
+echo ""
 echo "wms Backup tool"
 echo "Author: René Zingerle"
 echo "Date: 23.11.2017"
