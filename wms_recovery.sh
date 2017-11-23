@@ -1,16 +1,21 @@
 #!/bin/bash
 
-echo "wms-one Recovery tool"
+echo ""
+echo "wms Recovery Tool"
 echo "Author: René Zingerle"
-echo "Date: 10.08.2015"
-echo "Version: 0.11 [BETA]"
-echo "Infos: http://wmsblog.rothirsch-tec.at/wmsone_backup/index.html"
+echo "Date: 23.11.2017"
+echo "Version: 0.12 [BETA]"
+echo "Infos: https://blog.rothirsch.tech/wms_backup/"
 echo "---------------------"
 
 usr=$USER
 prf=1
 dbg=0
 imgfol="part_img"
+
+# Get script directory
+cd $(dirname $0)
+sdir="$PWD/"
 
 if [ $dbg -eq 0 ]; then
      exec="&> /dev/null"
@@ -30,27 +35,28 @@ check_dependencies() {
 }
 
 echo ""
-# Prüfe ober der ausführende Benutzer root ist.
+# Check if the user is root
 if [[ $usr == "root" ]]; then
 
-    echo "Bitte führen Sie den Datenträger jetzt/erneut in den Card Reader ein!"
-    read -p "Bestätigen Sie mit dem Befehl (mount): " plugged
+    echo "Please insert sdCard"
+    read -p "Confirm with mount (mount): " plugged
     exit=0
     while [ $exit -eq 0 ]; do
         if [[ $plugged == "mount" ]]; then
             
             if check_dependencies; then
-                # Wähle Backup
+
+                # Choose backup
                 if [ $prf -eq 1 ]; then
                    
                     req=0 
                     while [ $req -eq 0 ]; do
 
-                        # Entscheidung welcher Ordner verwendet werden soll 
+                        # Choose directory
                         rq=0
                         while [ $rq -eq 0 ]; do
 
-                            # Lese Inhalt des Backup Ordner
+                            # Read list directory
                             i=0
                             echo ""
                             while read p
@@ -60,81 +66,82 @@ if [[ $usr == "root" ]]; then
                                 ((i++))
                             done < <(ls -1 $imgfol)
 
-                            read -p "Welches Backup soll wiederhergestellt werden (Nummer): " bdec
+                            read -p "Choose directory which includes the backup (Number): " bdec
                             re='^[0-9]+$'
                             if [ $bdec -lt 0 ] || [ $bdec -gt ${#fol[@]} ] || ! [[ $bdec =~ $re ]]; then
-                                echo "Auswahl nicht möglich"
+                                echo "Decision not possible, choose again: "
                             else
-                                if [ -e ${imgfol}/${fol[bdec]}/state.txt ]; then
-                                    echo "Verwende Ordner ${imgfol}/${fol[bdec]}"
+                                if [ -e ${imgfol}/${fol[bdec]}/type.txt ]; then
+                                    echo "Choose directory ${imgfol}/${fol[bdec]}"
                                     rq=1
                                 else
                                     imgfol="${imgfol}/${fol[bdec]}"
-                                    echo "Unterordner erkannt: Wähle erneut:"
+                                    echo "Subdirectory found, choose again:"
                                 fi
                             fi
                         done
 
-                        # Lesen der Beschreibung
+                        # Read the comment
                         echo ""
-                        echo "Beschreibung: "
+                        echo "Comment: "
                         cat ${imgfol}/${fol[bdec]}/comment.txt 
                         echo "--------------"
                         rq=1
 
-                        # Entgültige Entscheidung
-                        read -p "Soll dieses Backup verwendet werden? (y/n): " cdec
+                        # Final decision
+                        read -p "Do you really want to use this backup? (Y/n): " cdec
                         rq=0 
                         while [ $rq -eq 0 ]; do
-                            if [[ $cdec == "y" ]]; then
+                            if [[ $cdec == [Yy] ]] || [[ $cdec == "" ]]; then
                                 rq=1
                                 req=1
                             elif [[ $cdec == "n" ]]; then
                                 rq=1
                             else 
-                                read -p "Auswahl nicht möglich (y/n): " cdec
+                                read -p "Unknown option (Y/n): " cdec
                             fi
                         done
                     done
 
-                    # Prüfe status
-                    if [[ $(cat ${imgfol}/${fol[$bdec]}/state.txt) == "Complete" ]]; then
-                        state="full"
-                    elif [[ $(cat ${imgfol}/${fol[$bdec]}/state.txt) == "Partition" ]]; then
-                        state="part"
+                    # Check type
+                    if [[ $(cat ${imgfol}/${fol[$bdec]}/type.txt) == "Complete" ]]; then
+                        b_type="full"
+                    elif [[ $(cat ${imgfol}/${fol[$bdec]}/type.txt) == "Partition" ]]; then
+                        b_type="part"
                     else
-                        echo "Es wurde keine Information darüber gefunden, ob es sich um ein Volles oder Partitions Backup handelt." 
-                        echo "[1] Vollbackup"
-                        echo "[2] Partitionsbackup"
-                        read -p "Wahl: " sdec
+                        echo "type.txt file is missing. What kind of backup is in the directory?" 
+                        echo "[1] Fullbackup"
+                        echo "[2] Partitionbackup"
+                        read -p "Choose: " sdec
                         if [ $sdec -eq 1 ]; then
-                            state="full"
+                            b_type="full"
                         elif [ $sdec -eq 2 ]; then
-                            state="part"
+                            b_type="part"
                         else
-                            echo "Auswahl nicht möglich beende Script"
-                            exit
+                            echo "Unknow option [1/2]:"
+                            exit 1
                         fi
                     fi
                         
                     if [ -f  ${imgfol}/${fol[$bdec]}/pinfo.sh ]; then
                         source ${imgfol}/${fol[$bdec]}/pinfo.sh
                     else
-                        echo "Veraltetes Backup wird nicht mehr unterstützt"
+                        echo "This backup is not compatible with the version of this script."
+                        exit 1
                     fi
                 fi
 
-                # Starte den Wiederherstellungsprozess
+                # Start recovery
                 if [ $prf -eq 1 ]; then
                     echo ""
-                    echo "-- Recovery gestartet --"
-                    echo "Verwende Backup: ${fol[$bdec]}"
-                    rm -rf tmp/*
+                    echo "-- Starting recovery --"
+                    echo "Use backup: ${fol[$bdec]}"
+                    rm -rf ${sdir}tmp/*
                 fi
 
-                # Suche der Speichermedien und bereite sie zu einem Auswahlmenü zu
-                i=0             # Zähler
+                # Search and list all existing disks
                 echo ""
+                i=0             # Counter
                 while read p
                 do
                     if [ $i -ne 0 ]; then
@@ -143,52 +150,48 @@ if [[ $usr == "root" ]]; then
                     fi
                     ((i++))
                 done < <(lsblk -d -o NAME)
-                read -p "Welchen Datenträger möchten Sie verwenden (Nummer): " ddec
+                read -p "Please choose the disk which you will overwrite (0-9): " ddec
 
 
-                # Wähle Datenträger
+                # Choose disk
                 if [ $prf -eq 1 ]; then 
 
-                    if [[ $state == "part" ]]; then
+                    if [[ $b_type == "part" ]]; then
 
-                        # Hole Informationen
+                        # Getting information
                         if [ $prf -eq 1 ]; then
-                            echo ""
-                            echo "Kopiere Ordner"
-                            #cp -a ${imgfol}/${fol[$bdec]}/*.gz tmp/
-
 
                             # Vergrößern eines Datenträgers
-                            while [[ $sidc != "y"  ]] && [[ $sidc != "n" ]] 
+                            while [[ $sidc == [!Yy]  ]] && [[ $sidc != "n" ]] 
                             do
-                                read -p "Soll die letzte Partition erweitert werden? (y/n): " sidc
-                                if [[ $sidc == "y" ]]; then
-                                    echo "Letzte Partition wird erweitert..."
+                                read -p "Do you want to extend the last partition to maximum (Y/n): " sidc
+                                if [[ $sidc == [Yy] ]] ||  [[ $sidc == "" ]]; then
+                                    echo "Last partition will be extended..."
                                 elif [[ $sidc == "n" ]]; then
-                                    echo "Fahre fort..."
+                                    echo "Partition sizes will be the same as the backup sizes..."
                                 else
-                                    read -p "Auswahl nicht möglich!... " sidc
+                                    read -p "Unknown option (Y/n)!... " sidc
                                 fi  
                             done
 
-                            read -p "Der komplette Datenträger ${device[$ddec]} wird überschrieben (z=ZEROS) [y/n/z]: " dec
-                            if [[ $dec == "y" ]] || [[ $dec == "z" ]]; then
+                            read -p "The complete disk ${device[$ddec]} will be overwritten (z=ZEROS) [Y/n/z]: " dec
+                            if [[ $dec == "z" ]]; then
 if [[ $dec == "z" ]]; then
-                                    read -p "Die Lebensdauer eine SD Karte ist von ihren Schreibzyklen abhängig. Trotzdem fortfahren? (y/n): " dec
-                                    if [[ $dec == "y" ]]; then
-                                        echo "Überschreibe den kompletten Datenträger ${device[$ddec]} mit /dev/null ..."
+                                    read -p "The lifetime of a sdCard depends on how often it is overwritten. Ok? (Y/n): " dec
+                                    if [[ $dec == [Yy] ]] || [[ $dec == "" ]]; then
+                                        echo "Overwrite the complete storage device ${device[$ddec]} with /dev/null ..."
                                         pv -tpreb /dev/zero | dd of=/dev/${device[$ddec]} bs=32M conv=noerror && sync
                                     fi
                                 fi
                             fi
 
                         # # #
-                        # Entfernen der bestehenden Partitionen am Datenträger
+                        # Delete existing partitions and the MBR on the storage device
 
-                            # Suche der Partitionen und deren Größen im Format Byte
+                        # Find partitions and there sizes in Byte
                             if [ $prf -eq 1 ]; then
-                                i=0             # Zähler
-                                j=0
+                                i=0 # counter
+                                j=0 # counter
                                 while read p
                                 do
                                     if  [[ $p == *"${device[$ddec]}"* ]]; then
@@ -202,35 +205,34 @@ if [[ $dec == "z" ]]; then
                             fi
                             part=($(printf "%s\n" "${part[@]}" | sort -u))
 
-                        # # #
-                        # Unmount der bestehenden Partition und löschen des MBR und Partitionstabellen
+                        # Unmount
                             if [[ ${part[@]} == "" ]]; then
 
-                                echo "Keine Partitionen erkannt."
+                                echo "No partitions found."
 
                             else
 
                                 if [ $prf -eq 1 ]; then
 
                                     echo ""
-                                    echo "Prüfe ob das Dateisystem ${part[$pdec]} einhängt/gemountet ist."
+                                    echo "Check if the partition ${part[$pdec]} is mounted."
                                     for (( x=0; x<${#part[@]}; x++ ));
                                     do
                                         if mountpoint -q /dev/${part[$x]} &> /dev/null; then
                                             echo ""
-                                            echo "${part[$x]} ist eingehängt. Entferne..."
+                                            echo "${part[$x]} mounted. Unmount..."
                                             umount /dev/${part[$x]} &> /dev/null
 
                                         elif mount -l | grep /dev/${part[$x]} &> /dev/null; then
                                             echo ""
-                                            echo "${part[$x]} ist eingehängt. Entferne..."
+                                            echo "${part[$x]} mounted. Unmount..."
                                             umount /dev/${part[$x]} &> /dev/null
 
                                         fi
                                     done
                                 fi
 
-                                # Löschen der bestehenden Partition
+                        # Delete extisting partitions
                                 if [ $prf -eq 1 ]; then
 
                                     echo ""
@@ -243,9 +245,9 @@ if [[ $dec == "z" ]]; then
                         # # #
 
                         # # #
-                        # Erstellen der Partitionen
+                        # Create new partitions
 
-                            # Finde letzte Partition
+                        # Find the last parition
                             partAmount=0
                             if [ $prf -eq 1 ]; then
                                 for (( x=0;  x < ${#opsize[@]}; x++ )); do
@@ -255,10 +257,11 @@ if [[ $dec == "z" ]]; then
                                     fi
                                 done
                             fi
-    
+   
+                        # Create 
                             if [ $prf -eq 1 ]; then
 
-                                #echo ""
+                                # wms_backups saves the mbr. Maybe this is helpful in the future
                                 #echo "MBR und Partitionstabelle wiederherstellen"
                                 #dd if=${imgfol}/${fol[$bdec]}/mbr.bin of=/dev/mmcblk0 bs=1M count=1
 
@@ -269,6 +272,8 @@ if [[ $dec == "z" ]]; then
                                     parted -s /dev/${device[$ddec]} mklabel msdos
 
                                     pnumber=1
+
+                        # Read trough the partition list save by wms_backup.sh
                                     for (( x=0;  x < ${#opsize[@]}; x++ )); do
 
                                         partType=$(awk -F';' '{print $1;}' <<<${opsize[$x]})
@@ -277,7 +282,7 @@ if [[ $dec == "z" ]]; then
                                             ssec=$(awk -F';' '{print $2;}' <<<${opsize[$x]})
                                             ssec=$(sed 's/s//g' <<< $ssec)
 
-                                            if [ $pnumber -eq $partAmount ] && [[ $sidc == "y" ]]; then
+                                            if [ $pnumber -eq $partAmount ] && [[ $sidc == [Yy] ]]; then
                                                 ssiz=""
                                             else
                                                 ssiz=$(awk -F';' '{print $3;}' <<<${opsize[$x]})
@@ -298,17 +303,19 @@ if [[ $dec == "z" ]]; then
                                 fi
                             fi
 
-                            # ReRead sdCard so /dev/mmcblk0p2 will be recognized
-                            # Without this option a device called /dev/loop0 will be created
+                        # ReRead sdCard so all partitions will be recognized
+                        # Without this option a device called /dev/loop0 will be created
                             partprobe
                         #
                         # # #
 
+
                         # # #
-                        # Wiederherstellen der Image Dateien
+                        # Recovery of the images
                             if [ $prf -eq 1 ]; then
-                                echo "!! Dieser Vorgang kann einige Zeit in Anspruch nehmen...  !!"
-                                echo "!! Bitte warten Sie auch wenn der Vorgang 100% erreicht hat... !!"
+                                echo "!! Please sit backup an wait for a while... !!"
+                                echo "!! This step can take some time..."
+                                echo "!! Please wait, even if the proccess stucks at 100%... !!"
                                 echo ""
                                 i=1
 
@@ -320,13 +327,13 @@ if [[ $dec == "z" ]]; then
                                     sync
 
                                     if [ $i -gt 1 ]; then
-                                        echo "Überprüfe das Dateisystem..."
+                                        echo "Check filesytem..."
                                             e2fsck -f /dev/${device[$ddec]}p$i &> /dev/null
 
-                                        echo "Vergrößere Dateisystem auf maximum..."
+                                        echo "Resize filesystem to maximum..."
                                             resize2fs -p /dev/${device[$ddec]}p$i &> /dev/null
 
-                                        echo "Überprüfe das Dateisystem..."
+                                        echo "Check filesystem..."
                                             e2fsck -f /dev/${device[$ddec]}p$i &> /dev/null
                                     fi
 
@@ -335,40 +342,39 @@ if [[ $dec == "z" ]]; then
                                 done
                             fi
 
-                            echo "Image wurde wiederhergestellt."
+                            echo "Image recovered successfully."
                             for x in 1 2 3; do sleep 0.5; echo -ne "\a"; done
 
-                        fi # state = part
+                        fi # b_type = part
                     fi # $prf -eq 1
 
-                    if [[ $state == "full" ]]; then
-                        echo "Vollständiges Backup erkannt. Überschreibe Datenträger!"
-                        echo "!! Sollten der Recovery-Prozess 100% erreicht haben, der Skript aber nicht mehr reagieren, dann muss der Datenträger entfernt werden !!"
+                    if [[ $b_type == "full" ]]; then
+                        echo "Found Fullbackup. Overwrite complite storage device!"
                         gzip -dc ${imgfol}/${fol[$bdec]}/*.gz | pv -tpreb | dd bs=4M of=/dev/${device[$ddec]} && sync
                     fi
 
-                # Beende Script wenn $prf 0
+                # Exist scritp if $prf 0
                 fi
 
-            # Beende den Script wenn die Abhängigkeiten nicht gegeben sind
+            # Exit script if dependencie problems detected
             else
                 echo ""
-                echo "-- ! Bitte installieren Sie die Abhängigkeiten --"
+                echo "-- ! Please install dependencies --"
             fi
             exit=1
-            # Beende den Script wenn das Gerät nicht angehängt ist.
+            # Exit script if storage device is unmounted
         else
             echo ""
-            read -p "Eingabe nicht möglich. Geben Sie 'mount' oder 'exit' ein: " plugged
+            read -p "Unknown option. Use 'mount' or 'exit': " plugged
         fi
         if [[ $plugged == "exit" ]]; then
             echo ""
-            echo "Script wurde beendet."
+            echo "User exits script."
             exit=1
         fi
     done
 
-# Beende den Script wenn er nicht vom User root ausgeführt wird!
+# End script if the executing user is not root
 else
-    echo "Der Script muss als Root ausgeführt werden."
+    echo "The script must be executed as root"
 fi
