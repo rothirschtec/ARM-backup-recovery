@@ -141,6 +141,7 @@ if [[ $usr == "root" ]]; then
 
                 # Search and list all existing disks
                 echo ""
+                partprobe
                 i=0             # Counter
                 while read p
                 do
@@ -162,12 +163,14 @@ if [[ $usr == "root" ]]; then
                         if [ $prf -eq 1 ]; then
 
                             # Vergrößern eines Datenträgers
+                            sidc="I"
                             while [[ $sidc == [!Yy]  ]] && [[ $sidc != "n" ]] 
                             do
                                 read -p "Do you want to extend the last partition to maximum (Y/n): " sidc
                                 if [[ $sidc == [Yy] ]] ||  [[ $sidc == "" ]]; then
                                     echo "Last partition will be extended..."
-                                elif [[ $sidc == "n" ]]; then
+                                    sidc="y"
+                                elif [[ $sidc == [Nn] ]]; then
                                     echo "Partition sizes will be the same as the backup sizes..."
                                 else
                                     read -p "Unknown option (Y/n)!... " sidc
@@ -232,12 +235,6 @@ if [[ $dec == "z" ]]; then
                                     done
                                 fi
 
-                        # Delete extisting partitions
-                                if [ $prf -eq 1 ]; then
-                                    echo ""
-                                    echo "Delete MBR and partition table"
-                                    dd if=/dev/zero of=/dev/${device[$ddec]} bs=100M count=1 &> /dev/null 
-                                fi
                             fi
                         #
                         # # #
@@ -259,11 +256,9 @@ if [[ $dec == "z" ]]; then
                         # Create 
                             if [ $prf -eq 1 ]; then
 
-
-                                echo ""
-                                echo "Create partition table and partitions"
-                                parted -s /dev/${device[$ddec]} mklabel msdos
-                                pnumber=1
+                                #echo ""
+                                #echo "Create partition table and partitions"
+                                #parted -s /dev/${device[$ddec]} mklabel msdos
 
                                 # wms_backups saves the mbr. Maybe this is helpful in the future
                                 echo "MBR und Partitionstabelle recovery"
@@ -271,6 +266,9 @@ if [[ $dec == "z" ]]; then
                                 partprobe 
 
                         # Read trough the partition list save by wms_backup.sh
+                                echo ""
+                                echo "Resize partitions"
+                                pnumber=1
                                 for (( x=0;  x < ${#opsize[@]}; x++ )); do
 
                                     partType=$(awk -F';' '{print $1;}' <<<${opsize[$x]})
@@ -281,28 +279,24 @@ if [[ $dec == "z" ]]; then
 
                                         if [ $pnumber -eq $partAmount ] && [[ $sidc == [Yy] ]]; then
                                             ssiz=""
+                                            ( echo d; echo $pnumber; echo n; echo p; echo $pnumber; echo $ssec; echo $ssiz; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
                                         else
                                             ssiz=$(awk -F';' '{print $3;}' <<<${opsize[$x]})
                                             ssiz=$(sed 's/s//g' <<< $ssiz)
                                         fi
-
-
-                                        ( echo n; echo p; echo $pnumber; echo $ssec; echo $ssiz; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
-                    # ReRead sdCard so all partitions will be recognized
-                    # Without this option a device called /dev/loop0 will be created
-                                        kpartx -u /dev/${device[$ddec]}p$pnumber
 
                                         (( pnumber++ ))
                                     fi
                                 done
                             fi
 
+                        # ReRead sdCard so all partitions will be recognized
+                        # Without this option a device called /dev/loop0 will be created
+                            # kpartx -u /dev/${device[$ddec]}p$pnumber
+                            partprobe
+
                         #
                         # # #
-
-                        # Create FAT32 LBA
-                        ( echo t; echo 1; echo c; echo a; echo 1; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
-                        partprobe
 
                         # # #
                         # Recovery of the images
@@ -331,12 +325,13 @@ if [[ $dec == "z" ]]; then
                                             e2fsck -f /dev/${device[$ddec]}p$i &> /dev/null
                                     fi
 
-                                    kpartx -u /dev/${device[$ddec]}p$i
                                     (( i++ ))
                                     echo ""
                                 done
                             fi
 
+                            # kpartx -u /dev/${device[$ddec]}p$i
+                            partprobe
                             echo "Image recovered successfully."
                             for x in 1 2 3; do sleep 0.5; echo -ne "\a"; done
 
