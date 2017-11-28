@@ -4,10 +4,10 @@ Wooden Micro Servers are ARM based SBCs like the Banana PI with a Debian Jessie/
 
 ## Compatibility 
 
-| Device | State |
-| --- | --- |
-| bpi-m3 | tested |
-| bpi-m64 | not tested  |
+| Device | State | Image |
+| --- | --- | --- |
+| bpi-m3 | tested | https://drive.google.com/open?id=0B_YnvHgh2rwjdlN4bVFZVzd3YlE |
+| bpi-m64 | tested  | https://drive.google.com/open?id=0B_YnvHgh2rwjazlNRTRHei1NbmM |
 | bpi-m2+ | not tested  |
 | bpi-m2u | not tested  |
 | bpi-mr2 | not tested  |
