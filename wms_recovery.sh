@@ -22,7 +22,7 @@ if [ $dbg -eq 0 ]; then
 fi
 
 check_dependencies() {
-    dep=("pv" "util-linux" "gzip" "parted" "kpartx")
+    dep=("pv" "util-linux" "gzip" "parted")
 
     for x in "${dep[@]}"; do
         dpkg-query -W $x &> /dev/null
@@ -292,7 +292,6 @@ if [[ $dec == "z" ]]; then
 
                         # ReRead sdCard so all partitions will be recognized
                         # Without this option a device called /dev/loop0 will be created
-                            # kpartx -u /dev/${device[$ddec]}p$pnumber
                             partprobe
 
                         #
@@ -330,7 +329,6 @@ if [[ $dec == "z" ]]; then
                                 done
                             fi
 
-                            # kpartx -u /dev/${device[$ddec]}p$i
                             partprobe
                             echo "Image recovered successfully."
                             for x in 1 2 3; do sleep 0.5; echo -ne "\a"; done
