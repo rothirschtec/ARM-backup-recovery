@@ -4,14 +4,13 @@ Wooden Micro Servers are ARM based SBCs like the Banana PI with a Debian Jessie/
 
 ## Backup & Recovery
 
-### Compatibility 
-
 ### wms_backup.sh (BETA)
 Use this script to backup the sdCard from your SBC like a bpi-m3.
 
 ### wms_recovery.sh (BETA)
 Recover the backups made with wms_backup.sh
 
+### Compatibility 
 | Device | State | Image |
 | --- | --- | --- |
 | bpi-m3 | tested | https://drive.google.com/open?id=0B_YnvHgh2rwjdlN4bVFZVzd3YlE |
