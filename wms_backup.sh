@@ -277,25 +277,17 @@ if [[ $usr == "root" ]]; then
                     if [[ $shrink == "2" ]]; then
                         # Resize des ROOTfs
                         if [ $prf -eq 1 ]; then
+
                             echo "Resize partition /dev/${part[$pdec]} to maximum"
                             echo "Check the filesystem..."
-                            if [ $dbg -eq 0 ]; then 
-                                e2fsck -f -y -C 0 /dev/${part[$pdec]} &> /dev/null
-                            else
-                                e2fsck -f -y -C 0 /dev/${part[$pdec]}
-                            fi
-                            echo "Resize filesystem to maximum..."
-                            if [ $dbg -eq 0 ]; then 
+                            e2fsck -f -y -C 0 /dev/${part[$pdec]} &> /dev/null
 
-                                (echo d; echo $pdec; echo n; echo p; echo $pdec; echo ${starsec[$(bc -l <<< "${pdec} - 1")]} ; echo ${psize[$(bc -l <<< "${pdec} - 1")]}; echo w) | fdisk /dev/${devices[$ddec]} >> $bLog
-                                resize2fs /dev/${part[$pdec]} 
-                            fi
+                            echo "Resize filesystem to maximum..."
+                            (echo d; echo $pdec; echo n; echo p; echo $pdec; echo ${starsec[$(bc -l <<< "${pdec} - 1")]} ; echo ; echo w) | fdisk /dev/${devices[$ddec]} >> $bLog
+                            resize2fs /dev/${part[$pdec]} 
+
                             echo "Check the filesystem..."
-                            if [ $dbg -eq 0 ]; then 
-                                e2fsck -f -y -C 0 /dev/${part[$pdec]} &> /dev/null
-                            else
-                                e2fsck -f -y -C 0 /dev/${part[$pdec]}
-                            fi
+                            e2fsck -f -y -C 0 /dev/${part[$pdec]} &> /dev/null
                         fi
     
                         # Copy files
