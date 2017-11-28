@@ -22,7 +22,7 @@ if [ $dbg -eq 0 ]; then
 fi
 
 check_dependencies() {
-    dep=("pv" "util-linux" "gzip" "parted")
+    dep=("pv" "util-linux" "gzip" "parted" "kpartx")
 
     for x in "${dep[@]}"; do
         dpkg-query -W $x &> /dev/null
@@ -234,11 +234,9 @@ if [[ $dec == "z" ]]; then
 
                         # Delete extisting partitions
                                 if [ $prf -eq 1 ]; then
-
                                     echo ""
                                     echo "Delete MBR and partition table"
-                                    dd if=/dev/zero of=/dev/${device[$ddec]} bs=1M count=1 &> /dev/null 
-
+                                    dd if=/dev/zero of=/dev/${device[$ddec]} bs=100M count=1 &> /dev/null 
                                 fi
                             fi
                         #
@@ -261,59 +259,55 @@ if [[ $dec == "z" ]]; then
                         # Create 
                             if [ $prf -eq 1 ]; then
 
+
+                                echo ""
+                                echo "Create partition table and partitions"
+                                parted -s /dev/${device[$ddec]} mklabel msdos
+                                pnumber=1
+
                                 # wms_backups saves the mbr. Maybe this is helpful in the future
-                                #echo "MBR und Partitionstabelle wiederherstellen"
-                                #dd if=${imgfol}/${fol[$bdec]}/mbr.bin of=/dev/mmcblk0 bs=1M count=1
-
-                                pf=1
-                                if [ $pf -eq 1 ]; then
-
-                                    echo ""
-                                    parted -s /dev/${device[$ddec]} mklabel msdos
-
-                                    pnumber=1
+                                echo "MBR und Partitionstabelle recovery"
+                                dd if=${imgfol}/${fol[$bdec]}/mbr.bin of=/dev/${device[$ddec]} bs=100M count=1
+                                partprobe 
 
                         # Read trough the partition list save by wms_backup.sh
-                                    for (( x=0;  x < ${#opsize[@]}; x++ )); do
+                                for (( x=0;  x < ${#opsize[@]}; x++ )); do
 
-                                        partType=$(awk -F';' '{print $1;}' <<<${opsize[$x]})
-                                        if [[ $partType != "Free" ]]; then
+                                    partType=$(awk -F';' '{print $1;}' <<<${opsize[$x]})
+                                    if [[ $partType != "Free" ]]; then
 
-                                            ssec=$(awk -F';' '{print $2;}' <<<${opsize[$x]})
-                                            ssec=$(sed 's/s//g' <<< $ssec)
+                                        ssec=$(awk -F';' '{print $2;}' <<<${opsize[$x]})
+                                        ssec=$(sed 's/s//g' <<< $ssec)
 
-                                            if [ $pnumber -eq $partAmount ] && [[ $sidc == [Yy] ]]; then
-                                                ssiz=""
-                                            else
-                                                ssiz=$(awk -F';' '{print $3;}' <<<${opsize[$x]})
-                                                ssiz=$(sed 's/s//g' <<< $ssiz)
-                                            fi
-
-
-                                            ( echo n; echo p; echo $pnumber; echo $ssec; echo $ssiz; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
-
-                                            if [[ $partType == "P1" ]]; then
-                                                # Create FAT32 LBA
-                                                ( echo t; echo 1; echo c; echo a; echo 1; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
-                                            fi
-
-                                            (( pnumber++ ))
+                                        if [ $pnumber -eq $partAmount ] && [[ $sidc == [Yy] ]]; then
+                                            ssiz=""
+                                        else
+                                            ssiz=$(awk -F';' '{print $3;}' <<<${opsize[$x]})
+                                            ssiz=$(sed 's/s//g' <<< $ssiz)
                                         fi
-                                    done
-                                fi
+
+
+                                        ( echo n; echo p; echo $pnumber; echo $ssec; echo $ssiz; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
+                    # ReRead sdCard so all partitions will be recognized
+                    # Without this option a device called /dev/loop0 will be created
+                                        kpartx -u /dev/${device[$ddec]}p$pnumber
+
+                                        (( pnumber++ ))
+                                    fi
+                                done
                             fi
 
-                        # ReRead sdCard so all partitions will be recognized
-                        # Without this option a device called /dev/loop0 will be created
-                            partprobe
                         #
                         # # #
 
+                        # Create FAT32 LBA
+                        ( echo t; echo 1; echo c; echo a; echo 1; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
+                        partprobe
 
                         # # #
                         # Recovery of the images
                             if [ $prf -eq 1 ]; then
-                                echo "!! Please sit backup an wait for a while... !!"
+                                echo "!! Please sit back an wait for a while... !!"
                                 echo "!! This step can take some time..."
                                 echo "!! Please wait, even if the proccess stucks at 100%... !!"
                                 echo ""
@@ -337,6 +331,7 @@ if [[ $dec == "z" ]]; then
                                             e2fsck -f /dev/${device[$ddec]}p$i &> /dev/null
                                     fi
 
+                                    kpartx -u /dev/${device[$ddec]}p$i
                                     (( i++ ))
                                     echo ""
                                 done
