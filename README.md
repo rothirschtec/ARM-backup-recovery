@@ -3,6 +3,11 @@ Scripts for #wms compatible servers.
 Wooden Micro Servers are ARM based SBCs like the Banana PI with a Debian Jessie/Stretch Image
 
 Compatibility: 
+| bpi-m3   |   |   |   |   |
+|---|---|---|---|---|
+| bpi-m64   |   |   |   |   |
+|   |   |   |   |   |
+|   |   |   |   |   |
 |   bpi-m3  |   tested      |
 |   bpi-m64 |   not tested  |
 |   bpi-m2+ |   not tested  |
