@@ -110,14 +110,14 @@ if [[ $usr == "root" ]]; then
                         NOW=${bak_fol}/$(date +"%Y_%m_%dat%H_%M_%S")
                         mkdir -p ${imgfol}/$NOW
 
-                        echo ""
-                        echo "MBR Backup" 
-                        dd if=/dev/${devices[$ddec]} of=${imgfol}/$NOW/mbr.bin bs=1M count=1
-
                     fi
     
 
                     if [[ $shrink == "2" ]]; then
+
+                        echo ""
+                        echo "MBR Backup" 
+                        dd if=/dev/${devices[$ddec]} of=${imgfol}/$NOW/mbr.bin bs=100M count=1
 
                     # # #
                     # Find partition size in byte
