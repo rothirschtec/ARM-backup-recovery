@@ -151,8 +151,25 @@ if [[ $usr == "root" ]]; then
                     fi
                     ((i++))
                 done < <(lsblk -d -o NAME)
-                read -p "Please choose the disk which you will overwrite (0-9): " ddec
+                read -p "Please choose the disk which you want to overwrite (0-9): " ddec
+                sdCard=${device[$ddec]}
 
+                if [[ $sdCard == "mmcblk"[0-9] ]]; then
+                    partition="p"
+                elif [[ $sdCard == "sd"[a-z] ]]; then
+                    partition=""
+                else
+                    echo ""
+                    echo "ERROR: Unknow device name type."
+                    echo "For safety reasons this script will stop."
+                    echo "Script only allows following devices: "
+                    echo " - mmcblk[0-9]"
+                    echo " - sd[a-z]"
+                    echo "If you want to add an other option, please don't hesitate to write to hq@rothirsch.tech"
+                    echo ""
+                    exit 2
+                fi 
+                echo "Using: ${sdCard}${partition}"
 
                 # Choose disk
                 if [ $prf -eq 1 ]; then 
@@ -177,13 +194,13 @@ if [[ $usr == "root" ]]; then
                                 fi  
                             done
 
-                            read -p "The complete disk ${device[$ddec]} will be overwritten (z=ZEROS) [Y/n/z]: " dec
+                            read -p "The complete disk ${sdCard} will be overwritten (z=ZEROS) [Y/n/z]: " dec
                             if [[ $dec == "z" ]]; then
 if [[ $dec == "z" ]]; then
                                     read -p "The lifetime of a sdCard depends on how often it is overwritten. Ok? (Y/n): " dec
                                     if [[ $dec == [Yy] ]] || [[ $dec == "" ]]; then
-                                        echo "Overwrite the complete storage device ${device[$ddec]} with /dev/null ..."
-                                        pv -tpreb /dev/zero | dd of=/dev/${device[$ddec]} bs=32M conv=noerror && sync
+                                        echo "Overwrite the complete storage device ${sdCard} with /dev/null ..."
+                                        pv -tpreb /dev/zero | dd of=/dev/${sdCard} bs=32M conv=noerror && sync
                                     fi
                                 fi
                             fi
@@ -197,7 +214,7 @@ if [[ $dec == "z" ]]; then
                                 j=0 # counter
                                 while read p
                                 do
-                                    if  [[ $p == *"${device[$ddec]}"* ]]; then
+                                    if  [[ $p == *"${sdCard}"* ]]; then
                                         if [ $i -ne 0 ]; then
                                             part[$j]=$p
                                             ((j++))
@@ -258,11 +275,11 @@ if [[ $dec == "z" ]]; then
 
                                 #echo ""
                                 #echo "Create partition table and partitions"
-                                #parted -s /dev/${device[$ddec]} mklabel msdos
+                                #parted -s /dev/${sdCard} mklabel msdos
 
                                 # wms_backups saves the mbr. Maybe this is helpful in the future
                                 echo "MBR und Partitionstabelle recovery"
-                                dd if=${imgfol}/${fol[$bdec]}/mbr.bin of=/dev/${device[$ddec]} bs=100M count=1
+                                dd if=${imgfol}/${fol[$bdec]}/mbr.bin of=/dev/${sdCard} bs=100M count=1
                                 partprobe 
 
                         # Read trough the partition list save by wms_backup.sh
@@ -279,7 +296,7 @@ if [[ $dec == "z" ]]; then
 
                                         if [ $pnumber -eq $partAmount ] && [[ $sidc == [Yy] ]]; then
                                             ssiz=""
-                                            ( echo d; echo $pnumber; echo n; echo p; echo $pnumber; echo $ssec; echo $ssiz; echo w) | fdisk /dev/${device[$ddec]} &> /dev/null
+                                            ( echo d; echo $pnumber; echo n; echo p; echo $pnumber; echo $ssec; echo $ssiz; echo w) | fdisk /dev/${sdCard} &> /dev/null
                                         else
                                             ssiz=$(awk -F';' '{print $3;}' <<<${opsize[$x]})
                                             ssiz=$(sed 's/s//g' <<< $ssiz)
@@ -308,20 +325,20 @@ if [[ $dec == "z" ]]; then
 
                                 for x in  ${imgfol}/${fol[$bdec]}/p[0-9]*.gz
                                 do
-                                    echo "Write, $x to /dev/${device[$ddec]}p$i..."
+                                    echo "Write, $x to /dev/${sdCard}${partition}$i..."
                             
-                                    gzip -dc $x | pv -tpreb | dd of=/dev/${device[$ddec]}p$i  bs=4M
+                                    gzip -dc $x | pv -tpreb | dd of=/dev/${sdCard}${partition}$i  bs=4M
                                     sync
 
                                     if [ $i -gt 1 ]; then
                                         echo "Check filesytem..."
-                                            e2fsck -f /dev/${device[$ddec]}p$i &> /dev/null
+                                            e2fsck -f /dev/${sdCard}${partition}$i &> /dev/null
 
                                         echo "Resize filesystem to maximum..."
-                                            resize2fs -p /dev/${device[$ddec]}p$i &> /dev/null
+                                            resize2fs -p /dev/${sdCard}${partition}$i &> /dev/null
 
                                         echo "Check filesystem..."
-                                            e2fsck -f /dev/${device[$ddec]}p$i &> /dev/null
+                                            e2fsck -f /dev/${sdCard}${partition}$i &> /dev/null
                                     fi
 
                                     (( i++ ))
@@ -338,7 +355,7 @@ if [[ $dec == "z" ]]; then
 
                     if [[ $b_type == "full" ]]; then
                         echo "Found Fullbackup. Overwrite complite storage device!"
-                        gzip -dc ${imgfol}/${fol[$bdec]}/*.gz | pv -tpreb | dd bs=4M of=/dev/${device[$ddec]} && sync
+                        gzip -dc ${imgfol}/${fol[$bdec]}/*.gz | pv -tpreb | dd bs=4M of=/dev/${sdCard} && sync
                     fi
 
                 # Exist scritp if $prf 0
