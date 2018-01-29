@@ -136,7 +136,6 @@ if [[ $usr == "root" ]]; then
                     echo ""
                     echo "-- Starting recovery --"
                     echo "Use backup: ${fol[$bdec]}"
-                    rm -rf ${sdir}tmp/*
                 fi
 
                 # Search and list all existing disks
