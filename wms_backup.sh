@@ -15,7 +15,7 @@ echo "---------------------"
 
         # # #
         # Checks dependencies and tries to install them
-        dep=("ntp" "ntpdate" "pv" "uuid-runtime")
+        dep=("pv" "uuid-runtime")
 
         for x in "${dep[@]}"; do
             dpkg-query -W $x &> /dev/null
