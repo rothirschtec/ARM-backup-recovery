@@ -18,7 +18,7 @@ echo "---------------------"
         dep=("pv" "uuid-runtime")
 
         for x in "${dep[@]}"; do
-            dpkg-query -W $x &> /dev/null
+            dpkg -s $x &> /dev/null
             if [ $? -eq 1 ]; then
                 echo "$x: is not installed"
                 apt-get -y install $x

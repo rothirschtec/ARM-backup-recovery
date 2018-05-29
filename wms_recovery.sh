@@ -25,7 +25,7 @@ check_dependencies() {
     dep=("pv" "util-linux" "gzip" "parted")
 
     for x in "${dep[@]}"; do
-        dpkg-query -W $x &> /dev/null
+        dpkg -s $x &> /dev/null
         if [ $? -eq 1 ]; then
             echo "$x: ist nicht installiert"
             ni=1
