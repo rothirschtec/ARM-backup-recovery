@@ -3,9 +3,9 @@
 echo ""
 echo "wms Backup tool"
 echo "Author: René Zingerle"
-echo "Date: 23.11.2017"
-echo "Version: 0.12 [BETA]"
-echo "Infos: https://blog.rothirsch.tech/wms_backup/"
+echo "Date: 07.06.2018"
+echo "Version: 0.13 [BETA]"
+echo "Infos: https://blog.rothirsch.tech/SBCs/scripts/"
 echo "---------------------"
 
 
@@ -230,7 +230,7 @@ if [[ $usr == "root" ]]; then
 
                             echo ""
                             echo "Shrink filesystem ${part[$pdec]}... "
-                            resize2fs -M /dev/${part[$pdec]}  >> $bLog
+                            resize2fs -M /dev/${part[$pdec]} >> $bLog
 
                             rbc=$(tune2fs -l /dev/${part[$pdec]} | grep "Block count" | tail -1)
                             bsz=$(tune2fs -l /dev/${part[$pdec]} | grep "Block size" | tail -1)
@@ -238,8 +238,16 @@ if [[ $usr == "root" ]]; then
                             bsz=${bsz##* }
                             ((psizadd=(${rbc}*${bsz})/1000))
 
+                            echo "Check the filesystem again..."
+                            e2fsck -f -y /dev/${part[$pdec]} >> $bLog
+
                             echo "Shrink partition size: ${part[$pdec]}..."
-                            (echo d; echo $pdec; echo n; echo p; echo $pdec; echo ${starsec[$(bc -l <<< "${pdec} - 1")]} ; echo +${psizadd}K; echo w) | fdisk /dev/${devices[$ddec]} >> $bLog
+
+                            if [ $pdec -gt 1 ]; then
+                                (echo d; echo $pdec; echo n; echo p; echo $pdec; echo ${starsec[$(bc -l <<< "${pdec} - 1")]} ; echo +${psizadd}K; echo w) | fdisk /dev/${devices[$ddec]} >> $bLog
+                            else
+                                (echo d; echo n; echo p; echo $pdec; echo ${starsec[1]} ; echo +${psizadd}K; echo w) | fdisk /dev/${devices[$ddec]} >> $bLog
+                            fi
 
                             echo "Check the filesystem again..."
                             e2fsck -f -y /dev/${part[$pdec]} >> $bLog
@@ -283,7 +291,12 @@ if [[ $usr == "root" ]]; then
                             e2fsck -f -y -C 0 /dev/${part[$pdec]} &> /dev/null
 
                             echo "Resize filesystem to maximum..."
-                            (echo d; echo $pdec; echo n; echo p; echo $pdec; echo ${starsec[$(bc -l <<< "${pdec} - 1")]} ; echo ; echo w) | fdisk /dev/${devices[$ddec]} >> $bLog
+
+                            if [ $pdec -gt 1 ]; then
+                                (echo d; echo $pdec; echo n; echo p; echo $pdec; echo ${starsec[$(bc -l <<< "${pdec} - 1")]} ; echo ; echo w) | fdisk /dev/${devices[$ddec]} >> $bLog
+                            else
+                                (echo d; echo n; echo p; echo $pdec; echo ${starsec[1]} ; echo ; echo w) | fdisk /dev/${devices[$ddec]} >> $bLog
+                            fi
                             resize2fs /dev/${part[$pdec]} 
 
                             echo "Check the filesystem..."
@@ -335,7 +348,9 @@ if [[ $usr == "root" ]]; then
 
                         echo ""
                         echo "Partition backup successfully ends..."
+
                     elif [[ $shrink == "1" ]]; then
+
                         echo ""
                         echo "Full backup successfully ends..."
                     fi

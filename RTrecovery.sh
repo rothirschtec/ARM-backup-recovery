@@ -3,9 +3,9 @@
 echo ""
 echo "wms Recovery Tool"
 echo "Author: René Zingerle"
-echo "Date: 23.11.2017"
-echo "Version: 0.12 [BETA]"
-echo "Infos: https://blog.rothirsch.tech/wms_backup/"
+echo "Date: 07.06.2018"
+echo "Version: 0.13 [BETA]"
+echo "Infos: http://blog.rothirsch.local/SBCs/scripts/"
 echo "---------------------"
 
 usr=$USER
@@ -295,7 +295,12 @@ if [[ $dec == "z" ]]; then
 
                                         if [ $pnumber -eq $partAmount ] && [[ $sidc == [Yy] ]]; then
                                             ssiz=""
-                                            ( echo d; echo $pnumber; echo n; echo p; echo $pnumber; echo $ssec; echo $ssiz; echo w) | fdisk /dev/${sdCard} &> /dev/null
+
+                                            if [ $pnumber -gt 1 ]; then
+                                                ( echo d; echo $pnumber; echo n; echo p; echo $pnumber; echo $ssec; echo $ssiz; echo w) | fdisk /dev/${sdCard} &> /dev/null
+                                            else
+                                                ( echo d; echo n; echo p; echo $pnumber; echo $ssec; echo $ssiz; echo w) | fdisk /dev/${sdCard} &> /dev/null
+                                            fi
                                         else
                                             ssiz=$(awk -F';' '{print $3;}' <<<${opsize[$x]})
                                             ssiz=$(sed 's/s//g' <<< $ssiz)
