@@ -12,3 +12,6 @@ Recover the backups made with RTbackup.sh
 | Device | State | Image |
 | --- | --- | --- |
 | bpi-m64 | tested  | https://www.armbian.com/bananapi-m64/ |
+| bpi-m3 | tested | https://drive.google.com/open?id=0B_YnvHgh2rwjdlN4bVFZVzd3YlE |
+| bpi-m64 | tested  | https://drive.google.com/open?id=0B_YnvHgh2rwjazlNRTRHei1NbmM |
+
