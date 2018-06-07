@@ -89,8 +89,63 @@ if [[ $usr == "root" ]]; then
                     # Create part_img fol
                         mkdir -p ${imgfol}
                     fi
-                    
+
                     if [ $prf -eq 1 ]; then
+			rq=0
+			message=1
+			while [ $rq -eq 0 ]; do
+
+			    # Read list directory
+			    i=0
+			    echo ""
+			    while read p
+			    do
+				fol[$i]=$p
+				echo "[$i] ${fol[$i]}"
+				((i++))
+			    done < <(ls -1 $imgfol)
+
+			    if [ $message -eq 1 ]; then
+				    message=0	
+				    echo "Choose a directory which"
+				    echo "- includes the backup (Number)"
+				    echo "- write (h) if you are in the right directory"
+				    echo "- write (e) to end the script"
+				    read -p "- or write a name to create a new directory: " bdec
+			    else
+				    read -p ": " bdec
+			    fi
+
+			    re='^[0-9]+$'
+			    if [[ $bdec == "e" ]]; then
+				echo "End script"
+				exit 1
+
+			    elif [[ $bdec == "h" ]]; then
+				echo "Directory is ${imgfol}/"
+				echo ""
+				rq=1
+
+			    elif [[ $bdec =~ $re ]]; then
+
+				echo ""
+				if [ $bdec -lt 0 ] || [ $bdec -gt ${#fol[@]} ] || ! [[ $bdec =~ $re ]]; then
+				    echo -n "Decision not possible, choose again"
+				else
+				    imgfol="${imgfol}/${fol[bdec]}"
+				    echo -n "Subdirectory found, choose again"
+				fi
+			    else	
+				echo "Directory is ${imgfol}/${bdec}/"
+				rq=1
+			    fi
+
+			done
+                    fi
+
+
+                    if [ $prf -eq 1 ]; then
+
                     # Show devices
                         i=0
                         while read p
@@ -105,14 +160,11 @@ if [[ $usr == "root" ]]; then
                         done < <(lsblk -d -o NAME)
                         read -p "Choose your backup device [0-9]: " ddec
 
-                        ls -R ${imgfol}/ | grep ":$" | sed -e 's/:$//' -e 's/[^-][^\/]*\// /g' -e 's/^/ /'
-                        read -p "Name of the backup directory: " bak_fol
-                        NOW=${bak_fol}/$(date +"%Y_%m_%dat%H_%M_%S")
+                        NOW=$(date +"%Y_%m_%dat%H_%M_%S")
                         mkdir -p ${imgfol}/$NOW
-
                     fi
-    
-
+  
+ 
                     if [[ $shrink == "2" ]]; then
 
                         echo ""
