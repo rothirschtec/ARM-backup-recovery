@@ -1,5 +1,5 @@
 # RTscripts
-Here I will add my self written script I use daily.
+Here I will add my self written scripts I use daily.
 Please use all the scripts with caution. I'm a one man project at the moment... 
 
 ## Dependencies
