@@ -17,10 +17,9 @@ Use this script to backup the SD-card of your SBC
 Recover the backups made with RTbackup.sh
 
 ### Compatibility 
-| Device | State | Image |
-| --- | --- | --- |
-| bpi-m1+ | tested  | https://www.armbian.com/banana-pi-plus/ |
-| bpi-m64 | tested  | https://www.armbian.com/bananapi-m64/ |
-| bpi-m3 | tested | https://drive.google.com/open?id=0B_YnvHgh2rwjdlN4bVFZVzd3YlE |
-| bpi-m64 | tested  | https://drive.google.com/open?id=0B_YnvHgh2rwjazlNRTRHei1NbmM |
-
+\| Device | State | Image |
+\| --- | --- | --- |
+\| bpi-m1+ | tested  | https://www.armbian.com/banana-pi-plus/ |
+\| bpi-m64 | tested  | https://www.armbian.com/bananapi-m64/ |
+\| bpi-m3 | tested | https://drive.google.com/open?id=0B_YnvHgh2rwjdlN4bVFZVzd3YlE |
+\| bpi-m64 | tested  | https://drive.google.com/open?id=0B_YnvHgh2rwjazlNRTRHei1NbmM |
