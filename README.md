@@ -1,5 +1,5 @@
-# RTscripts
-Here you will find my self written scripts I use daily.
+# RTscripts (DEPRECATED/OUTDATED)
+Here you will find a few scripts I wrote a few years back. I leave them here for a nostalgic purpose.
 Please use all the scripts with caution. I'm a one man project at the moment... 
 
 ## Dependencies
